@@ -54,66 +54,103 @@ export default function DashboardPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await fetch(`${API_URL}/api/auth/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (err) {
-      // ignore, still redirect
+    const con = confirm("Are you sure to logged out")
+    if (con) {
+      try {
+        await fetch(`${API_URL}/api/auth/logout`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+        // ignore, still redirect
+      }
+      router.push("/login");
     }
-    router.push("/login");
+  };
+  const handleLogoutall = async () => {
+    const con = confirm("Are you sure to logged out from all devices")
+    if (con) {
+      try {
+        await fetch(`${API_URL}/api/auth/logout-all`, {
+          method: "POST",
+          credentials: "include",
+        });
+      } catch (err) {
+      }
+      router.push("/login");
+    }
   };
 
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
-      {/* Top bar */}
-      <header className="bg-white border-b border-[#E2E8F0]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-[#FF5A36]">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#FF5A36]" />
-            </span>
-            <span
-              className="font-[600] tracking-tight text-lg text-[#0B2027]"
-              style={{ fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}
-            >
-              RapidQuiz
-            </span>
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-7 sm:h-8 w-7 sm:w-8 items-center justify-center rounded-full border-2 border-[#FF5A36]"> <span className="h-2 sm:h-2.5 w-2 sm:w-2.5 rounded-full bg-[#FF5A36]" /> </span>
+
+            <div>
+              <h1
+                className="text-lg font-bold text-[#0B2027]"
+                style={{
+                  fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)",
+                }}
+              >
+                RapidQuiz
+              </h1>
+              <p className="text-xs text-[#64748B]">
+                Quiz Management Platform
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-[#0B2027]">
-              Welcome, <span className="font-medium">{username || "there"}</span>
-            </span>
+          {/* Actions */}
+          <div className="flex items-center gap-3">
             <button
               onClick={handleLogout}
-              className="text-sm text-[#64748B] hover:text-[#0B2027] transition"
+              className="cursor-pointer rounded-lg border border-[#CBD5E1] bg-white px-4 py-2 text-sm font-medium text-[#334155] transition-all hover:bg-[#F8FAFC] hover:border-[#94A3B8]"
             >
-              Log out
+              Logout
+            </button>
+
+            <button
+              onClick={handleLogoutall}
+              className="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-red-700"
+            >
+              Logout All Devices
             </button>
           </div>
         </div>
       </header>
-
       {/* Main content */}
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-6">
-          <div>
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 py-6 sm:py-10">
+        <div className="mb-8 rounded-2xl bg-gradient-to-r from-[#1E40AF] via-[#2563EB] to-[#3B82F6] p-6 sm:p-8 text-white shadow-lg">
+          <div className="flex flex-col gap-3">
+            <p className="text-sm sm:text-base text-blue-100 font-medium">
+              Welcome back,
+            </p>
+
             <h1
-              className="text-2xl font-[600] text-[#0B2027]"
+              className="text-3xl sm:text-5xl font-bold tracking-tight"
               style={{ fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}
             >
-              Your quizzes
+              {username || "Guest"} 👋
             </h1>
-            <p className="text-sm text-[#64748B] mt-1">
-              Create a new quiz for a class or check results from past ones.
+
+            <div className="h-px w-20 bg-blue-200/60"></div>
+
+            <h2 className="text-xl sm:text-2xl font-semibold">
+              Quiz Dashboard
+            </h2>
+
+            <p className="max-w-2xl mb-2.5 text-sm sm:text-base text-blue-100 leading-relaxed">
+              Create engaging quizzes, manage existing ones, and monitor student
+              performance—all from one place.
             </p>
           </div>
 
           <button
             onClick={() => setModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#0B2A2A] text-white text-sm font-medium px-4 py-2.5 transition hover:bg-[#0B6E4F] focus:outline-none focus:ring-2 focus:ring-[#0B6E4F]/40 focus:ring-offset-2"
+            className="w-full sm:w-auto inline-flex items-center cursor-pointer justify-center sm:justify-start gap-2 rounded-lg bg-[#0B2A2A] text-white text-xs sm:text-sm font-medium px-4 py-2.5 transition hover:bg-[#0B6E4F] focus:outline-none focus:ring-2 focus:ring-[#0B6E4F]/40 focus:ring-offset-2"
           >
             <PlusIcon />
             Create quiz
@@ -182,10 +219,11 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
-      </main>
+      </main >
 
-      {modalOpen && <CreateQuizModal onClose={() => setModalOpen(false)} />}
-    </div>
+      {modalOpen && <CreateQuizModal onClose={() => setModalOpen(false)} />
+      }
+    </div >
   );
 }
 
@@ -339,11 +377,10 @@ function ModalField({ label, name, value, onChange, error, placeholder }) {
         value={value}
         onChange={onChange}
         placeholder={placeholder}
-        className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${
-          error
-            ? "border-red-400 focus:ring-red-200"
-            : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-        }`}
+        className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${error
+          ? "border-red-400 focus:ring-red-200"
+          : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+          }`}
       />
       {error && <p className="mt-1.5 text-xs text-red-500">{error}</p>}
     </div>
