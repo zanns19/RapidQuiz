@@ -109,6 +109,7 @@ export default function QuizBuilderPage() {
       });
       const data = await res.json();
       if (!res.ok) setError(data.message || "Could not save the quiz.");
+         alert("Draft saved successfully!");
     } catch (err) {
       setError("Could not reach the server. Check your connection.");
     } finally {

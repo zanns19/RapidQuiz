@@ -125,7 +125,7 @@ export default function LoginPage() {
           <h2 className="text-2xl font-[600] text-[#0B2027] mb-1">Sign in</h2>
           <p className="text-sm text-[#64748B] mb-8">
             New to RapidQuiz?{" "}
-            <Link href="/" className="text-[#0B6E4F] font-medium hover:underline">
+            <Link href="/registration" className="text-[#0B6E4F] font-medium hover:underline">
               Create an account
             </Link>
           </p>
