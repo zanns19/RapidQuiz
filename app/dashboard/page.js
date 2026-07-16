@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-
+import Swal from "sweetalert2";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function DashboardPage() {
@@ -15,25 +15,52 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  useEffect(() => {
-    fetchMe();
-    fetchQuizzes();
-  }, []);
+  
+const fetchMe = async () => {
+  try {
+    const res = await fetch(`${API_URL}/api/auth/get-me`, {
+      credentials: "include",
+    });
 
-  const fetchMe = async () => {
-    try {
-      const res = await fetch(`${API_URL}/api/auth/get-me`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUsername(data.username || data.user?.username || "");
-      }
-    } catch (err) {
-      // silently ignore, header just falls back to a generic greeting
+    if (res.ok) {
+      const data = await res.json();
+      const name = data.username || data.user?.username || "";
+      setUsername(name);
+      return name;
     }
-  };
+  } catch (err) {}
 
+  return "";
+};
+
+useEffect(() => {
+  const init = async () => {
+    const name = await fetchMe();
+    fetchQuizzes();
+    if (!sessionStorage.getItem("dashboardWelcomeShown")) {
+      sessionStorage.setItem("dashboardWelcomeShown", "true");
+    Swal.fire({
+      icon: "success",
+      title: `Welcome, Honorable Sir ${name}! 👋`,
+      html: `
+        <p>We're glad to have you back.</p>
+        <br />
+        <p>
+          Create quizzes, manage your classes, and review student performance
+          with ease—all from one place.
+        </p>
+        <br />
+        <p style="font-size:14px; color:#6b7280;">
+          Have a productive day and happy teaching!
+        </p>
+      `,
+      confirmButtonText: "Let's Go",
+      confirmButtonColor: "#0B6E4F",
+    });
+  };
+  }
+  init();
+}, []);
   const fetchQuizzes = async () => {
     setLoadingQuizzes(true);
     setTableError("");

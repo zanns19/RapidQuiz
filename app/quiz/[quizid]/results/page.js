@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
+import Swal from "sweetalert2";
+
+
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -39,10 +42,26 @@ export default function QuizResultsPage() {
         }
     };
 
-    const handleDownloadPdf = () => {
-        window.print();
-    };
-
+const handleDownloadPdf = async () => {
+Swal.fire({
+  icon: "info",
+  title: "Printing Recommendation",
+  html: `
+    <div style="text-align:left">
+      <p>For the best readability, use the following settings:</p>
+      <ul>
+        <li><b>Paper Size:</b> Letter</li>
+        <li><b>Margins:</b> None</li>
+        <li><b>Scale:</b> 88%</li>
+      </ul>
+    </div>
+  `,
+  confirmButtonText: "Print",
+   didClose: () => {
+    window.print();
+  },
+});
+};
     const totalMarks =
         quiz?.questions?.reduce((sum, q) => sum + (Number(q.marks) || 0), 0) || 0;
 
@@ -94,16 +113,17 @@ export default function QuizResultsPage() {
 
                 {/* Header */}
                 <div className="text-center border-b p-1">
-                    <div className="relative flex items-center justify-center">
+                    <div className="relative flex items-center justify-end sm:justify-center">
                         <div className="absolute left-0">
                             <Image
                                 src="/logo.png"
-                                alt="Logo"
+                                alt="UAF Logo"
                                 width={50}
                                 height={25}
+                                loading="eager"
                             />
                         </div>
-                        <h2 className=" text-xs mx-3 sm:mx-0 sm:text-md md:text-lg font-semibold underline">
+                        <h2 className=" text-xs pr-6 sm:pr-0 sm:text-md md:text-lg font-semibold underline">
                             UAF CONSTITUENT COLLEGES T.T.SINGH
                         </h2>
                     </div>
@@ -120,7 +140,7 @@ export default function QuizResultsPage() {
                 </div>
 
                 {/* Details */}
-                <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-xs mt-6 border-b pb-5">
+                <div className="grid grid-cols-2 gap-x-10 gap-y-2 text-xs mt-3 border-b pb-3">
                     <p>
                         <strong>Name:</strong> <span className="underline">______________________</span>
                     </p>
@@ -145,7 +165,7 @@ export default function QuizResultsPage() {
 
 
                 {/* Questions */}
-                <div className="mt-4 text-sm">
+                <div className="mt-4 text-xs">
 
                     {/* MCQs */}
                     {quiz?.questions?.some((q) => q.type === "mcq") && (
@@ -170,7 +190,7 @@ export default function QuizResultsPage() {
 
                                         <div className="options">
                                             {q.options?.map((opt, i) => (
-                                                <div key={i} className="option text-sm">
+                                                <div key={i} className="option text-xs">
                                                     <span className="mr-2">
                                                         {String.fromCharCode(65 + i)}.
                                                     </span>
@@ -234,11 +254,11 @@ export default function QuizResultsPage() {
         margin-left: 14px;
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px 30px;
+        gap: 6px 22px;
       }
 
       .option {
-        font-size: 12px;
+        font-size: 10px;
         line-height: 1;
       }
 
@@ -279,7 +299,7 @@ export default function QuizResultsPage() {
           width: 100%;
           min-height: auto;
           margin: 0;
-          padding: 1mm;
+          padding: 5mm;
           box-shadow: none;
           page-break-after: always;
         }
