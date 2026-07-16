@@ -14,6 +14,7 @@ const emptyQuestion = () => ({
   text: "",
   options: ["", "", "", ""],
   correctOption: 0,
+  marks: "",
 });
 
 export default function QuizBuilderPage() {
@@ -78,19 +79,36 @@ export default function QuizBuilderPage() {
   const buildPayload = () =>
     questions.map(({ id, ...rest }) => {
       if (rest.type === "long") {
-        return { type: "long", text: rest.text };
+        return {
+          type: "long",
+          text: rest.text,
+          marks: rest.marks,
+        };
       }
       return rest;
     });
 
   const validate = () => {
-    for (const q of questions) {
-      if (!q.text.trim()) return "Every question needs text.";
-      if (q.type === "mcq" && q.options.some((o) => !o.trim()))
-        return "Fill in all four options, or switch the question to long answer.";
+  for (const q of questions) {
+    if (!q.text.trim()) {
+      return "Every question needs text.";
     }
-    return "";
-  };
+
+    if (q.marks === "" || q.marks == null) {
+      return "Please enter marks for every question.";
+    }
+
+    if (Number(q.marks) <= 0) {
+      return "Marks must be greater than 0.";
+    }
+
+    if (q.type === "mcq" && q.options.some((o) => !o.trim())) {
+      return "Fill in all four options, or switch the question to long answer.";
+    }
+  }
+
+  return "";
+};
 
   const saveDraft = async () => {
     const msg = validate();
@@ -109,7 +127,7 @@ export default function QuizBuilderPage() {
       });
       const data = await res.json();
       if (!res.ok) setError(data.message || "Could not save the quiz.");
-         alert("Draft saved successfully!");
+      alert("Draft saved successfully!");
     } catch (err) {
       setError("Could not reach the server. Check your connection.");
     } finally {
@@ -262,6 +280,7 @@ function QuestionCard({ index, question, onChange, onOptionChange, onRemove, rem
           rows={2}
           className="flex-1 rounded-lg border border-[#CBD5E1] bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:border-[#0B6E4F] focus:ring-2 focus:ring-[#0B6E4F]/20 resize-none"
         />
+
         {removable && (
           <button
             onClick={onRemove}
@@ -293,17 +312,32 @@ function QuestionCard({ index, question, onChange, onOptionChange, onRemove, rem
           Long answer
         </label>
       </div>
+      <div className="ml-8 mb-4">
+        <label className="block text-sm text-[#64748B] mb-1">
+          Marks
+        </label>
 
+        <input
+          type="number"
+          min={1}
+          value={question.marks}
+          onChange={(e) =>
+            onChange({
+              marks: Number(e.target.value),
+            })
+          }
+          className="w-28 rounded-lg border border-[#CBD5E1] px-3 py-2 text-sm focus:border-[#0B6E4F] focus:ring-2 focus:ring-[#0B6E4F]/20 outline-none"
+        />
+      </div>
       {question.type === "mcq" && (
         <div className="ml-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
           {question.options.map((opt, i) => (
             <label
               key={i}
-              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ${
-                question.correctOption === i
+              className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ${question.correctOption === i
                   ? "border-[#0B6E4F] bg-[#EAF6F1]"
                   : "border-[#CBD5E1] bg-white"
-              }`}
+                }`}
             >
               <input
                 type="radio"

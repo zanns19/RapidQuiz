@@ -13,6 +13,7 @@ export default function DashboardPage() {
   const [loadingQuizzes, setLoadingQuizzes] = useState(true);
   const [tableError, setTableError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     fetchMe();
@@ -80,7 +81,38 @@ export default function DashboardPage() {
       router.push("/login");
     }
   };
+  const handleDelete = async (quizId) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this quiz? This action cannot be undone."
+    );
 
+    if (!confirmDelete) return;
+
+    setDeletingId(quizId);
+
+    try {
+      const res = await fetch(`${API_URL}/api/quiz/${quizId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to delete quiz.");
+        return;
+      }
+
+      // Remove deleted quiz from table
+      setQuizzes((prev) => prev.filter((quiz) => quiz._id !== quizId));
+
+      alert("Quiz deleted successfully.");
+    } catch (err) {
+      alert("Something went wrong.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
@@ -114,7 +146,7 @@ export default function DashboardPage() {
 
             <button
               onClick={handleLogoutall}
-              className="cursor-pointer rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-red-700"
+              className="cursor-pointer hidden sm:inline rounded-lg bg-red-600 py-1.5 px-2 sm:px-3 md:px-4 sm:py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-red-700"
             >
               Logout All Devices
             </button>
@@ -203,12 +235,26 @@ export default function DashboardPage() {
                           >
                             <EditIcon />
                           </button>
+
                           <button
                             onClick={() => router.push(`/quiz/${quiz._id}/results`)}
                             title="View results"
                             className="p-2 rounded-md text-[#64748B] hover:text-[#FF5A36] hover:bg-[#FFF1EC] transition"
                           >
                             <ResultsIcon />
+                          </button>
+
+                          <button
+                            onClick={() => handleDelete(quiz._id)}
+                            disabled={deletingId === quiz._id}
+                            title="Delete quiz"
+                            className="p-2 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                          >
+                            {deletingId === quiz._id ? (
+                              <span className="text-xs">...</span>
+                            ) : (
+                              <DeleteIcon />
+                            )}
                           </button>
                         </div>
                       </td>
@@ -425,7 +471,25 @@ function ResultsIcon() {
     </svg>
   );
 }
-
+function DeleteIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+    </svg>
+  );
+}
 function CloseIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
