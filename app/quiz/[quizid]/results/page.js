@@ -52,7 +52,7 @@ Swal.fire({
       <ul>
         <li><b>Paper Size:</b> Letter</li>
         <li><b>Margins:</b> None</li>
-        <li><b>Scale:</b> 88%</li>
+        <li><b>Scale:</b> 88% or accordingly</li>
       </ul>
     </div>
   `,
@@ -159,7 +159,7 @@ Swal.fire({
                     </p>
 
                     <p>
-                        <strong>Total Questions:</strong> {quiz?.questions?.length}
+                        <strong>Time Allowed:</strong> {quiz?.timeAllowed} min
                     </p>
                 </div>
 
@@ -206,7 +206,7 @@ Swal.fire({
                     {/* Long Questions */}
                     {quiz?.questions?.some((q) => q.type !== "mcq") && (
                         <>
-                            <h3 className="font-semibold text-base mt-6 mb-3">
+                            <h3 className="font-semibold text-base mt-4 mb-2">
                                 Solve the following questions:
                             </h3>
 
@@ -245,7 +245,7 @@ Swal.fire({
       }
 
       .question {
-        margin-bottom: 20px;
+        margin-bottom: 10px;
         page-break-inside: avoid;
       }
 
@@ -263,12 +263,12 @@ Swal.fire({
       }
 
       .long-answer {
-        margin-top: 13px;
+        margin-top: 5px;
       }
 
       .long-answer div {
         border-bottom: 1px solid #d1d5db;
-        height: 32px;
+        height: 22px;
       }
 
       @media (max-width: 900px) {
@@ -279,9 +279,9 @@ Swal.fire({
           box-shadow: none;
         }
 
-        .options {
-          grid-template-columns: 1fr;
-        }
+        // .options {
+        //   grid-template-columns: 4fr;
+        // }
       }
 
       @media print {

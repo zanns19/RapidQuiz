@@ -15,34 +15,34 @@ export default function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
 
-  
-const fetchMe = async () => {
-  try {
-    const res = await fetch(`${API_URL}/api/auth/get-me`, {
-      credentials: "include",
-    });
 
-    if (res.ok) {
-      const data = await res.json();
-      const name = data.username || data.user?.username || "";
-      setUsername(name);
-      return name;
-    }
-  } catch (err) {}
+  const fetchMe = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/get-me`, {
+        credentials: "include",
+      });
 
-  return "";
-};
+      if (res.ok) {
+        const data = await res.json();
+        const name = data.username || data.user?.username || "";
+        setUsername(name);
+        return name;
+      }
+    } catch (err) { }
 
-useEffect(() => {
-  const init = async () => {
-    const name = await fetchMe();
-    fetchQuizzes();
-    if (!sessionStorage.getItem("dashboardWelcomeShown")) {
-      sessionStorage.setItem("dashboardWelcomeShown", "true");
-    Swal.fire({
-      icon: "success",
-      title: `Welcome, Honorable Sir ${name}! 👋`,
-      html: `
+    return "";
+  };
+
+  useEffect(() => {
+    const init = async () => {
+      const name = await fetchMe();
+      fetchQuizzes();
+      if (!sessionStorage.getItem("dashboardWelcomeShown")) {
+        sessionStorage.setItem("dashboardWelcomeShown", "true");
+        Swal.fire({
+          icon: "success",
+          title: `Welcome, Honorable Sir ${name}! 👋`,
+          html: `
         <p>We're glad to have you back.</p>
         <br />
         <p>
@@ -54,13 +54,13 @@ useEffect(() => {
           Have a productive day and happy teaching!
         </p>
       `,
-      confirmButtonText: "Let's Go",
-      confirmButtonColor: "#0B6E4F",
-    });
-  };
-  }
-  init();
-}, []);
+          confirmButtonText: "Let's Go",
+          confirmButtonColor: "#0B6E4F",
+        });
+      };
+    }
+    init();
+  }, []);
   const fetchQuizzes = async () => {
     setLoadingQuizzes(true);
     setTableError("");
@@ -307,6 +307,7 @@ function CreateQuizModal({ onClose }) {
     semester: "",
     courseCode: "",
     courseTitle: "",
+    timeAllowed: "",
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
@@ -323,6 +324,9 @@ function CreateQuizModal({ onClose }) {
     if (!form.semester.trim()) next.semester = "Semester is required";
     if (!form.courseCode.trim()) next.courseCode = "Course code is required";
     if (!form.courseTitle.trim()) next.courseTitle = "Course title is required";
+    if (!form.timeAllowed) next.timeAllowed = "Time allowed is required";
+
+    if (Number(form.timeAllowed) <= 0) next.timeAllowed = "Enter a valid time";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -408,6 +412,15 @@ function CreateQuizModal({ onClose }) {
             error={errors.courseTitle}
             placeholder="e.g. Database Systems"
           />
+          <ModalField
+            label="Time Allowed (minutes)"
+            name="timeAllowed"
+            value={form.timeAllowed}
+            onChange={handleChange}
+            error={errors.timeAllowed}
+            placeholder="e.g. 30"
+            type="number"
+          />
 
           {serverError && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5 text-sm text-red-600">
@@ -436,8 +449,7 @@ function CreateQuizModal({ onClose }) {
     </div>
   );
 }
-
-function ModalField({ label, name, value, onChange, error, placeholder }) {
+function ModalField({ label, name, value, onChange, error, placeholder, type = "text",}) {
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-[#0B2027] mb-1.5">
@@ -446,7 +458,7 @@ function ModalField({ label, name, value, onChange, error, placeholder }) {
       <input
         id={name}
         name={name}
-        type="text"
+        type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
