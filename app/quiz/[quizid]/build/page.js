@@ -89,26 +89,26 @@ export default function QuizBuilderPage() {
     });
 
   const validate = () => {
-  for (const q of questions) {
-    if (!q.text.trim()) {
-      return "Every question needs text.";
+    for (const q of questions) {
+      if (!q.text.trim()) {
+        return "Every question needs text.";
+      }
+
+      if (q.marks === "" || q.marks == null) {
+        return "Please enter marks for every question.";
+      }
+
+      if (Number(q.marks) <= 0) {
+        return "Marks must be greater than 0.";
+      }
+
+      if (q.type === "mcq" && q.options.some((o) => !o.trim())) {
+        return "Fill in all four options, or switch the question to long answer.";
+      }
     }
 
-    if (q.marks === "" || q.marks == null) {
-      return "Please enter marks for every question.";
-    }
-
-    if (Number(q.marks) <= 0) {
-      return "Marks must be greater than 0.";
-    }
-
-    if (q.type === "mcq" && q.options.some((o) => !o.trim())) {
-      return "Fill in all four options, or switch the question to long answer.";
-    }
-  }
-
-  return "";
-};
+    return "";
+  };
 
   const saveDraft = async () => {
     const msg = validate();
@@ -123,7 +123,14 @@ export default function QuizBuilderPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ questions: buildPayload() }),
+        body: JSON.stringify({
+          department: meta.department,
+          semester: meta.semester,
+          courseCode: meta.courseCode,
+          courseTitle: meta.courseTitle,
+          timeAllowed: meta.timeAllowed,
+          questions: buildPayload(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) setError(data.message || "Could not save the quiz.");
@@ -148,7 +155,15 @@ export default function QuizBuilderPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ questions: buildPayload(), status: "active" }),
+        body: JSON.stringify({
+  department: meta.department,
+  semester: meta.semester,
+  courseCode: meta.courseCode,
+  courseTitle: meta.courseTitle,
+  timeAllowed: meta.timeAllowed,
+  questions: buildPayload(),
+  status: "active",
+}),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -194,11 +209,46 @@ export default function QuizBuilderPage() {
       <main className="max-w-4xl mx-auto px-6 py-10">
         {/* Class metadata summary */}
         {meta && (
-          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <MetaItem label="Department" value={meta.department} />
-            <MetaItem label="Semester" value={meta.semester} />
-            <MetaItem label="Course code" value={meta.courseCode} />
-            <MetaItem label="Course title" value={meta.courseTitle} />
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 mb-8 grid grid-cols-2 sm:grid-cols-5 gap-4">
+            <MetaInput
+              label="Department"
+              value={meta.department}
+              onChange={(value) =>
+                setMeta((prev) => ({ ...prev, department: value }))
+              }
+            />
+
+            <MetaInput
+              label="Semester"
+              value={meta.semester}
+              onChange={(value) =>
+                setMeta((prev) => ({ ...prev, semester: value }))
+              }
+            />
+
+            <MetaInput
+              label="Course Code"
+              value={meta.courseCode}
+              onChange={(value) =>
+                setMeta((prev) => ({ ...prev, courseCode: value }))
+              }
+            />
+
+            <MetaInput
+              label="Course Title"
+              value={meta.courseTitle}
+              onChange={(value) =>
+                setMeta((prev) => ({ ...prev, courseTitle: value }))
+              }
+            />
+
+            <MetaInput
+              label="Time Allowed"
+              value={meta.timeAllowed}
+              onChange={(value) =>
+                setMeta((prev) => ({ ...prev, timeAllowed: value }))
+              }
+            />
           </div>
         )}
 
@@ -259,15 +309,22 @@ export default function QuizBuilderPage() {
   );
 }
 
-function MetaItem({ label, value }) {
+
+function MetaInput({ label, value, onChange }) {
   return (
     <div>
-      <p className="text-xs text-[#94A3B8] mb-0.5">{label}</p>
-      <p className="text-sm font-medium text-[#0B2027]">{value || "—"}</p>
+      <label className="block text-xs text-[#94A3B8] mb-1">
+        {label}
+      </label>
+
+      <input
+        value={value || ""}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-[#CBD5E1] px-3 py-2 text-sm focus:border-[#0B6E4F] focus:ring-2 focus:ring-[#0B6E4F]/20 outline-none"
+      />
     </div>
   );
 }
-
 function QuestionCard({ index, question, onChange, onOptionChange, onRemove, removable }) {
   return (
     <div className="bg-white rounded-xl border border-[#E2E8F0] p-5">
@@ -335,8 +392,8 @@ function QuestionCard({ index, question, onChange, onOptionChange, onRemove, rem
             <label
               key={i}
               className={`flex items-center gap-2.5 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ${question.correctOption === i
-                  ? "border-[#0B6E4F] bg-[#EAF6F1]"
-                  : "border-[#CBD5E1] bg-white"
+                ? "border-[#0B6E4F] bg-[#EAF6F1]"
+                : "border-[#CBD5E1] bg-white"
                 }`}
             >
               <input
