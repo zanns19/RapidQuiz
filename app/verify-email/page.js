@@ -17,6 +17,15 @@ function VerifyEmailForm() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [resendMessage, setResendMessage] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   useEffect(() => {
     if (emailFromQuery) setEmail(emailFromQuery);
@@ -77,8 +86,10 @@ function VerifyEmailForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.message || "Could not resend the code.");
+        if (res.status === 429) setCooldown(60);
       } else {
         setResendMessage("A new code has been sent to your email.");
+        setCooldown(60);
       }
     } catch (err) {
       setError("Could not reach the server. Check your connection and try again.");
@@ -213,15 +224,17 @@ function VerifyEmailForm() {
               <button
                 type="button"
                 onClick={handleResend}
-                disabled={resending}
-                className="text-[#0B6E4F] font-medium hover:underline disabled:opacity-60"
+                disabled={resending || cooldown > 0}
+                className="text-[#0B6E4F] font-medium hover:underline disabled:opacity-60 disabled:no-underline"
               >
-                {resending ? "Sending…" : "Resend code"}
+                {resending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend code"}
               </button>
             </p>
           </form>
         </div>
       </div>
+
+      
     </div>
   );
 }
