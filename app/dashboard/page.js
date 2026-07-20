@@ -140,29 +140,43 @@ export default function DashboardPage() {
       setDeletingId(null);
     }
   };
-  const handleCopyLink = async (quizId) => {
-    try {
-      await navigator.clipboard.writeText(
-        `${window.location.origin}/quiz/${quizId}/attempt`
-      );
+ const handleCopyLink = async (quiz) => {
+  if (quiz.status !== "active") {
+    const result = await Swal.fire({
+      icon: "warning",
+      title: "Quiz is not active",
+      text: "Students won't be able to attempt this quiz until it is activated. Do you still want to copy the link?",
+      showCancelButton: true,
+      confirmButtonText: "Copy Anyway",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#2563EB",
+    });
 
-      Swal.fire({
-        icon: "success",
-        title: "Link Copied!",
-        text: "Quiz link has been copied to your clipboard.",
-        timer: 1800,
-        showConfirmButton: false,
-        toast: true,
-        position: "top-end",
-      });
-    } catch {
-      Swal.fire({
-        icon: "error",
-        title: "Copy Failed",
-        text: "Unable to copy the quiz link.",
-      });
-    }
-  };
+    if (!result.isConfirmed) return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(
+      `${window.location.origin}/quiz/${quiz._id}/attempt`
+    );
+
+    Swal.fire({
+      icon: "success",
+      title: "Link Copied!",
+      text: "Quiz link has been copied to your clipboard.",
+      timer: 1800,
+      showConfirmButton: false,
+      toast: true,
+      position: "top-end",
+    });
+  } catch {
+    Swal.fire({
+      icon: "error",
+      title: "Copy Failed",
+      text: "Unable to copy the quiz link.",
+    });
+  }
+};
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
@@ -335,7 +349,7 @@ export default function DashboardPage() {
                           </button>
 
                           <button
-                            onClick={() => handleCopyLink(quiz._id)}
+                            onClick={() => handleCopyLink(quiz)}
                             title="Copy Quiz Link"
                             className="p-2 rounded-md text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition"
                           >

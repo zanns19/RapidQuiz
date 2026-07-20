@@ -127,7 +127,7 @@ export default function QuizAttemptPage() {
                                     setStudentName(e.target.value);
                                     setInfoErrors({ ...infoErrors, studentName: "" });
                                 }}
-                                placeholder="e.g. Ali Ahmed"
+                                placeholder="e.g. Ali Ahmad"
                                 className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.studentName
                                     ? "border-red-400 focus:ring-red-200"
                                     : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
@@ -149,7 +149,7 @@ export default function QuizAttemptPage() {
                                     setRegNumber(e.target.value);
                                     setInfoErrors({ ...infoErrors, regNumber: "" });
                                 }}
-                                placeholder="e.g. 2021-CS-101"
+                                placeholder="e.g. 2023-ag-9289"
                                 className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.regNumber
                                     ? "border-red-400 focus:ring-red-200"
                                     : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
