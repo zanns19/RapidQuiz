@@ -140,6 +140,29 @@ export default function DashboardPage() {
       setDeletingId(null);
     }
   };
+  const handleCopyLink = async (quizId) => {
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/quiz/${quizId}/attempt`
+      );
+
+      Swal.fire({
+        icon: "success",
+        title: "Link Copied!",
+        text: "Quiz link has been copied to your clipboard.",
+        timer: 1800,
+        showConfirmButton: false,
+        toast: true,
+        position: "top-end",
+      });
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Copy Failed",
+        text: "Unable to copy the quiz link.",
+      });
+    }
+  };
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
@@ -231,50 +254,64 @@ export default function DashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[#E2E8F0] text-left text-[#64748B]">
-                    <th className="px-5 py-3 font-medium">Course title</th>
-                    <th className="px-5 py-3 font-medium">Course code</th>
+                    <th className="px-5 py-3 font-medium">Course Title</th>
+                    <th className="px-5 py-3 font-medium">Course Code</th>
                     <th className="px-5 py-3 font-medium">Department</th>
                     <th className="px-5 py-3 font-medium">Semester</th>
                     <th className="px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 font-medium">Created</th>
-                    <th className="px-5 py-3 font-medium text-right">Actions</th>
+                    <th className="px-5 py-3 font-medium">Actions</th>
+                    <th className="px-5 py-3 font-medium">Access</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {quizzes.map((quiz) => (
-                    <tr key={quiz._id} className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]">
-                      <td className="px-5 py-3.5 text-[#0B2027] font-medium">{quiz.courseTitle}</td>
-                      <td className="px-5 py-3.5 text-[#0B2027]">{quiz.courseCode}</td>
-                      <td className="px-5 py-3.5 text-[#0B2027]">{quiz.department}</td>
-                      <td className="px-5 py-3.5 text-[#0B2027]">{quiz.semester}</td>
+                    <tr
+                      key={quiz._id}
+                      className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]"
+                    >
+                      <td className="px-5 py-3.5 font-medium text-[#0B2027]">
+                        {quiz.courseTitle}
+                      </td>
+
+                      <td className="px-5 py-3.5 text-[#0B2027]">
+                        {quiz.courseCode}
+                      </td>
+
+                      <td className="px-5 py-3.5 text-[#0B2027]">
+                        {quiz.department}
+                      </td>
+
+                      <td className="px-5 py-3.5 text-[#0B2027]">
+                        {quiz.semester}
+                      </td>
+
                       <td className="px-5 py-3.5">
                         <StatusBadge status={quiz.status || "draft"} />
                       </td>
+
                       <td className="px-5 py-3.5 text-[#64748B]">
-                        {quiz.createdAt ? new Date(quiz.createdAt).toLocaleDateString() : "—"}
+                        {quiz.createdAt
+                          ? new Date(quiz.createdAt).toLocaleDateString()
+                          : "—"}
                       </td>
+
+                      {/* Actions */}
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => router.push(`/quiz/${quiz._id}/build`)}
-                            title="Continue building"
+                            title="Edit Quiz"
                             className="p-2 rounded-md text-[#64748B] hover:text-[#0B6E4F] hover:bg-[#EAF6F1] transition"
                           >
                             <EditIcon />
                           </button>
 
                           <button
-                            onClick={() => router.push(`/quiz/${quiz._id}/results`)}
-                            title="View results"
-                            className="p-2 rounded-md text-[#64748B] hover:text-[#FF5A36] hover:bg-[#FFF1EC] transition"
-                          >
-                            <ResultsIcon />
-                          </button>
-
-                          <button
                             onClick={() => handleDelete(quiz._id)}
                             disabled={deletingId === quiz._id}
-                            title="Delete quiz"
+                            title="Delete Quiz"
                             className="p-2 rounded-md text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                           >
                             {deletingId === quiz._id ? (
@@ -282,6 +319,27 @@ export default function DashboardPage() {
                             ) : (
                               <DeleteIcon />
                             )}
+                          </button>
+                        </div>
+                      </td>
+
+                      {/* Access */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => router.push(`/quiz/${quiz._id}/results`)}
+                            title="View Results"
+                            className="p-2 rounded-md text-[#64748B] hover:text-[#FF5A36] hover:bg-[#FFF1EC] transition"
+                          >
+                            <ResultsIcon />
+                          </button>
+
+                          <button
+                            onClick={() => handleCopyLink(quiz._id)}
+                            title="Copy Quiz Link"
+                            className="p-2 rounded-md text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition"
+                          >
+                            <LinkIcon />
                           </button>
                         </div>
                       </td>
@@ -449,7 +507,7 @@ function CreateQuizModal({ onClose }) {
     </div>
   );
 }
-function ModalField({ label, name, value, onChange, error, placeholder, type = "text",}) {
+function ModalField({ label, name, value, onChange, error, placeholder, type = "text", }) {
   return (
     <div>
       <label htmlFor={name} className="block text-sm font-medium text-[#0B2027] mb-1.5">
@@ -533,6 +591,23 @@ function CloseIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
       <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+function LinkIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M10 13a5 5 0 0 0 7.07 0l2.12-2.12a5 5 0 0 0-7.07-7.07L10.5 5.43" />
+      <path d="M14 11a5 5 0 0 0-7.07 0L4.81 13.12a5 5 0 1 0 7.07 7.07L13.5 18.57" />
     </svg>
   );
 }
