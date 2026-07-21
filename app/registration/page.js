@@ -142,13 +142,13 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             <Field
-              label="Username"
+              label="Name"
               name="username"
               type="text"
               value={form.username}
               onChange={handleChange}
               error={errors.username}
-              placeholder="e.g. ali_teacher"
+              placeholder="e.g. Shan Afzal"
               autoComplete="username"
             />
 
