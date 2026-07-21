@@ -140,43 +140,43 @@ export default function DashboardPage() {
       setDeletingId(null);
     }
   };
- const handleCopyLink = async (quiz) => {
-  if (quiz.status !== "active") {
-    const result = await Swal.fire({
-      icon: "warning",
-      title: "Quiz is not active",
-      text: "Students won't be able to attempt this quiz until it is activated. Do you still want to copy the link?",
-      showCancelButton: true,
-      confirmButtonText: "Copy Anyway",
-      cancelButtonText: "Cancel",
-      confirmButtonColor: "#2563EB",
-    });
+  const handleCopyLink = async (quiz) => {
+    if (quiz.status !== "active") {
+      const result = await Swal.fire({
+        icon: "warning",
+        title: "Quiz is not active",
+        text: "Students won't be able to attempt this quiz until it is activated. Do you still want to copy the link?",
+        showCancelButton: true,
+        confirmButtonText: "Copy Anyway",
+        cancelButtonText: "Cancel",
+        confirmButtonColor: "#2563EB",
+      });
 
-    if (!result.isConfirmed) return;
-  }
+      if (!result.isConfirmed) return;
+    }
 
-  try {
-    await navigator.clipboard.writeText(
-      `${window.location.origin}/quiz/${quiz._id}/attempt`
-    );
+    try {
+      await navigator.clipboard.writeText(
+        `${window.location.origin}/quiz/${quiz._id}/attempt`
+      );
 
-    Swal.fire({
-      icon: "success",
-      title: "Link Copied!",
-      text: "Quiz link has been copied to your clipboard.",
-      timer: 1800,
-      showConfirmButton: false,
-      toast: true,
-      position: "top-end",
-    });
-  } catch {
-    Swal.fire({
-      icon: "error",
-      title: "Copy Failed",
-      text: "Unable to copy the quiz link.",
-    });
-  }
-};
+      Swal.fire({
+        icon: "success",
+        title: "Link Copied!",
+        text: "Quiz link has been copied to your clipboard.",
+        timer: 1800,
+        showConfirmButton: false,
+        toast: true,
+        position: "top-end",
+      });
+    } catch {
+      Swal.fire({
+        icon: "error",
+        title: "Copy Failed",
+        text: "Unable to copy the quiz link.",
+      });
+    }
+  };
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
@@ -380,6 +380,7 @@ function CreateQuizModal({ onClose }) {
     courseCode: "",
     courseTitle: "",
     timeAllowed: "",
+    checkingDifficulty: "medium",
   });
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState("");
@@ -399,6 +400,7 @@ function CreateQuizModal({ onClose }) {
     if (!form.timeAllowed) next.timeAllowed = "Time allowed is required";
 
     if (Number(form.timeAllowed) <= 0) next.timeAllowed = "Enter a valid time";
+    if (!form.checkingDifficulty) next.checkingDifficulty = "Select a checking difficulty";
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -484,15 +486,45 @@ function CreateQuizModal({ onClose }) {
             error={errors.courseTitle}
             placeholder="e.g. Database Systems"
           />
-          <ModalField
-            label="Time Allowed (minutes)"
-            name="timeAllowed"
-            value={form.timeAllowed}
-            onChange={handleChange}
-            error={errors.timeAllowed}
-            placeholder="e.g. 30"
-            type="number"
-          />
+
+          <div className="grid grid-cols-2 gap-4">
+            <ModalField
+              label="Time Allowed (minutes)"
+              name="timeAllowed"
+              value={form.timeAllowed}
+              onChange={handleChange}
+              error={errors.timeAllowed}
+              placeholder="e.g. 30"
+              type="number"
+            />
+
+            <div>
+              <label htmlFor="checkingDifficulty" className="block text-sm font-medium text-[#0B2027] mb-1.5">
+                Checking difficulty
+              </label>
+              <select
+                id="checkingDifficulty"
+                name="checkingDifficulty"
+                value={form.checkingDifficulty}
+                onChange={handleChange}
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] outline-none transition focus:ring-2 focus:ring-offset-0 ${
+                  errors.checkingDifficulty
+                    ? "border-red-400 focus:ring-red-200"
+                    : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+                }`}
+              >
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+              {errors.checkingDifficulty && (
+                <p className="mt-1.5 text-xs text-red-500">{errors.checkingDifficulty}</p>
+              )}
+              <p className="mt-1.5 text-xs text-[#94A3B8]">
+                Controls how strictly the AI checks long answers.
+              </p>
+            </div>
+          </div>
 
           {serverError && (
             <div className="rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5 text-sm text-red-600">
