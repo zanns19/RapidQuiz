@@ -30,6 +30,8 @@ export default function QuizAttemptPage() {
   // answers[index] = { selectedOption: number|null, locked: bool, longAnswer: string }
   const [answers, setAnswers] = useState({});
   const [saveStatus, setSaveStatus] = useState(""); // "saving" | "saved" | "error" | ""
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   const debounceTimer = useRef(null);
   const intervalTimer = useRef(null);
@@ -221,13 +223,37 @@ export default function QuizAttemptPage() {
     e.preventDefault();
   };
 
-  const handleSubmit = () => {
-    // TODO: wire this up to a real "finalize" endpoint (e.g. POST
-    // /api/attempt/:attemptId/submit) once submission scoring is ready.
-    // For now: force one last save so nothing typed right before submitting
-    // is lost, then this can flip status to "submitted" server-side.
-    saveNow(latestAnswers.current);
-    console.log("Submit clicked", { attemptId, studentName, regNumber, answers });
+  const handleSubmit = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to submit? You won't be able to change your answers after this."
+    );
+    if (!confirmed) return;
+
+    setSubmitError("");
+    setSubmitting(true);
+
+    // One last save so nothing typed right before submitting is lost
+    await saveNow(latestAnswers.current);
+
+    try {
+      const res = await fetch(`${API_URL}/api/attempt/${attemptId}/submit`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(data.message || "Could not submit the quiz. Please try again.");
+        setSubmitting(false);
+        return;
+      }
+
+      setStep("submitted");
+    } catch (err) {
+      setSubmitError("Could not reach the server. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // --- Checking for a resumable attempt ---
@@ -476,12 +502,19 @@ export default function QuizAttemptPage() {
             })}
         </div>
 
+        {submitError && (
+          <div className="mt-5 rounded-lg bg-red-50 border border-red-200 px-3.5 py-2.5 text-sm text-red-600">
+            {submitError}
+          </div>
+        )}
+
         <button
           type="button"
           onClick={handleSubmit}
-          className="w-full mt-8 rounded-lg bg-[#0B2A2A] text-white text-sm font-medium py-3 transition hover:bg-[#0B6E4F]"
+          disabled={submitting}
+          className="w-full mt-8 rounded-lg bg-[#0B2A2A] text-white text-sm font-medium py-3 transition hover:bg-[#0B6E4F] disabled:opacity-60"
         >
-          Submit quiz
+          {submitting ? "Submitting…" : "Submit quiz"}
         </button>
       </main>
     </div>

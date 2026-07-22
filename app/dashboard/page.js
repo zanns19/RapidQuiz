@@ -275,7 +275,8 @@ export default function DashboardPage() {
                     <th className="px-5 py-3 font-medium">Status</th>
                     <th className="px-5 py-3 font-medium">Created</th>
                     <th className="px-5 py-3 font-medium">Actions</th>
-                    <th className="px-5 py-3 font-medium">Access</th>
+                    <th className="px-5 py-3 font-medium">Paper</th>
+                    <th className="px-5 py-3 font-medium">Access&Results</th>
                   </tr>
                 </thead>
 
@@ -336,10 +337,10 @@ export default function DashboardPage() {
                           </button>
                         </div>
                       </td>
-
-                      {/* Access */}
+                      {/* Paper */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
+
                           <button
                             onClick={() => router.push(`/quiz/${quiz._id}/results`)}
                             title="View Results"
@@ -348,12 +349,24 @@ export default function DashboardPage() {
                             <ResultsIcon />
                           </button>
 
+                        </div>
+                      </td>
+                      {/* Access */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleCopyLink(quiz)}
                             title="Copy Quiz Link"
                             className="p-2 rounded-md text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition"
                           >
                             <LinkIcon />
+                          </button>
+                          <button
+                            onClick={() => router.push(`/quiz/${quiz._id}/submissions`)}
+                            title="View Submissions & Scores"
+                            className="p-2 rounded-md text-[#64748B] hover:text-[#0B6E4F] hover:bg-[#EAF6F1] transition"
+                          >
+                            <SubmissionsIcon />
                           </button>
                         </div>
                       </td>
@@ -637,6 +650,14 @@ function CloseIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
       <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+function SubmissionsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
     </svg>
   );
 }
