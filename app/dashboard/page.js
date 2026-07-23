@@ -271,12 +271,12 @@ export default function DashboardPage() {
                     <th className="px-5 py-3 font-medium">Course Title</th>
                     <th className="px-5 py-3 font-medium">Course Code</th>
                     <th className="px-5 py-3 font-medium">Department</th>
-                    <th className="px-5 py-3 font-medium">Semester</th>
+                    <th className="px-1 py-3 font-medium">Semester</th>
                     <th className="px-5 py-3 font-medium">Status</th>
-                    <th className="px-5 py-3 font-medium">Created</th>
-                    <th className="px-5 py-3 font-medium">Actions</th>
+                    <th className="px-2 py-3 font-medium">Created</th>
+                    <th className="px-5 py-3 font-medium pl-7">Actions</th>
                     <th className="px-5 py-3 font-medium">Paper</th>
-                    <th className="px-5 py-3 font-medium">Access&Results</th>
+                    <th className="px-5 py-3 font-medium pl-7">Activity</th>
                   </tr>
                 </thead>
 
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                         {quiz.department}
                       </td>
 
-                      <td className="px-5 py-3.5 text-[#0B2027]">
+                      <td className="px-1 py-3.5 text-[#0B2027]">
                         {quiz.semester}
                       </td>
 
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                         <StatusBadge status={quiz.status || "draft"} />
                       </td>
 
-                      <td className="px-5 py-3.5 text-[#64748B]">
+                      <td className="px-2 py-3.5 text-[#64748B]">
                         {quiz.createdAt
                           ? new Date(quiz.createdAt).toLocaleDateString()
                           : "—"}
@@ -342,8 +342,8 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-2">
 
                           <button
-                            onClick={() => router.push(`/quiz/${quiz._id}/results`)}
-                            title="View Results"
+                            onClick={() => router.push(`/quiz/${quiz._id}/paper`)}
+                            title="View Paper"
                             className="p-2 rounded-md text-[#64748B] hover:text-[#FF5A36] hover:bg-[#FFF1EC] transition"
                           >
                             <ResultsIcon />
@@ -351,7 +351,7 @@ export default function DashboardPage() {
 
                         </div>
                       </td>
-                      {/* Access */}
+                      {/* Activity */}
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-2">
                           <button

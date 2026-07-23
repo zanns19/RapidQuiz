@@ -9,7 +9,7 @@ import Swal from "sweetalert2";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-export default function QuizResultsPage() {
+export default function QuizPaperPage() {
     const router = useRouter();
     const params = useParams();
     const quizId = params.quizId;
@@ -26,12 +26,12 @@ export default function QuizResultsPage() {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`${API_URL}/api/quiz/${quizId}/results`, {
+            const res = await fetch(`${API_URL}/api/quiz/${quizId}/paper`, {
                 credentials: "include",
             });
             const data = await res.json();
             if (!res.ok) {
-                setError(data.message || "Could not load results for this quiz.");
+                setError(data.message || "Could not load paper for this quiz.");
             } else {
                 setQuiz(data.quiz || data);
             }
@@ -68,7 +68,7 @@ Swal.fire({
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#EEF2F6] text-sm text-[#64748B]">
-                Loading results…
+                Loading paper…
             </div>
         );
     }
