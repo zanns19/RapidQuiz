@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import Swal from "sweetalert2";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -32,6 +33,64 @@ export default function QuizBuilderPage() {
   useEffect(() => {
     fetchQuiz();
   }, [quizId]);
+
+
+  useEffect(() => {
+    const seen = localStorage.getItem("quiz-builder-guide");
+
+    if (!seen) {
+      Swal.fire({
+        icon: "info",
+        title: "How to Create a Quiz",
+        width: 650,
+        confirmButtonText: "Got it",
+        html: `
+        <div style="text-align:left; line-height:1.7">
+          <ol style="padding-left:18px">
+            <li>Enter the question text.</li>
+            <li>Select the question type (MCQ or Long Answer).</li>
+            <li><b>Assign marks</b> for every question.</li>
+            <li>For MCQs:  <strong style="color:#dc2626;"> (IMPORTANT)</strong>
+              <ul>
+                <li>Fill all four options.</li>
+                <li><b>Select the correct option</b> using the radio button.</li>
+              </ul>
+            </li>
+            <li>For Long Answer questions, only marks are required.</li>
+            <li>Click <b>Save Draft</b> to continue later or <b>Publish Quiz</b> when finished.</li>
+          </ol>
+        </div>
+      `,
+      }).then(() => {
+        localStorage.setItem("quiz-builder-guide", "true");
+      });
+    }
+  }, []);
+  const showGuide = ()=>{
+    Swal.fire({
+        icon: "info",
+        title: "How to Create a Quiz",
+        width: 650,
+        confirmButtonText: "Got it",
+        html: `
+        <div style="text-align:left; line-height:1.7">
+          <ol style="padding-left:18px">
+            <li>Enter the question text.</li>
+            <li>Select the question type (MCQ or Long Answer).</li>
+            <li><b>Assign marks</b> for every question.</li>
+            <li>For MCQs:  <strong style="color:#dc2626;"> (IMPORTANT)</strong>
+              <ul>
+                <li>Fill all four options.</li>
+                <li><b>Select the correct option</b> using the radio(Green) button.</li>
+              </ul>
+            </li>
+            <li>For Long Answer questions, only marks are required.</li>
+            <li>Click <b>Save Draft</b> to continue later or <b>Publish Quiz</b> when finished.</li>
+          </ol>
+        </div>
+      `,
+      })
+  }
 
   const fetchQuiz = async () => {
     setLoadingMeta(true);
@@ -156,14 +215,14 @@ export default function QuizBuilderPage() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-  department: meta.department,
-  semester: meta.semester,
-  courseCode: meta.courseCode,
-  courseTitle: meta.courseTitle,
-  timeAllowed: meta.timeAllowed,
-  questions: buildPayload(),
-  status: "active",
-}),
+          department: meta.department,
+          semester: meta.semester,
+          courseCode: meta.courseCode,
+          courseTitle: meta.courseTitle,
+          timeAllowed: meta.timeAllowed,
+          questions: buildPayload(),
+          status: "active",
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -259,6 +318,12 @@ export default function QuizBuilderPage() {
           >
             Build your quiz
           </h1>
+          <button
+            onClick={showGuide}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            ? Instructions
+          </button>
         </div>
 
         <div className="space-y-5">

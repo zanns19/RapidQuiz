@@ -98,12 +98,20 @@ export default function QuizSubmissionsPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
-        <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 mb-6">
-          <p className="text-lg font-[600] text-[#0B2027]">{quiz?.courseTitle}</p>
-          <p className="text-sm text-[#64748B]">
-            {quiz?.courseCode} • {quiz?.department} • Semester {quiz?.semester}
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 sm:p-5 mb-6">
+          <p className="text-lg sm:text-xl font-semibold text-[#0B2027] break-words">
+            {quiz?.courseTitle}
           </p>
+
+          <p className="text-sm text-[#64748B] mt-1 flex flex-wrap gap-x-2 gap-y-1">
+            <span>{quiz?.courseCode}</span>
+            <span>•</span>
+            <span>{quiz?.department}</span>
+            <span>•</span>
+            <span>Semester {quiz?.semester}</span>
+          </p>
+
           <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-[#64748B]">
             <span>
               <span className="font-semibold text-[#0B2027]">{attempts.length}</span> attempts
@@ -126,30 +134,31 @@ export default function QuizSubmissionsPage() {
               No students have started this quiz yet.
             </div>
           ) : (
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="min-w-[760px] w-full text-sm">
               <thead>
                 <tr className="border-b border-[#E2E8F0] text-left text-[#64748B]">
-                  <th className="px-5 py-3 font-medium">Name</th>
-                  <th className="px-5 py-3 font-medium">Reg. number</th>
-                  <th className="px-5 py-3 font-medium">Status</th>
-                  <th className="px-5 py-3 font-medium">Score</th>
-                  <th className="px-5 py-3 font-medium">Submitted</th>
-                  <th className="px-5 py-3 font-medium text-right">Details</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium">Name</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium">Reg. number</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium">Status</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium">Score</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium">Submitted</th>
+                  <th className="px-3 sm:px-5 py-3 font-medium text-right">Details</th>
                 </tr>
               </thead>
               <tbody>
                 {attempts.map((attempt) => (
-                   <Fragment key={attempt._id}>
+                  <Fragment key={attempt._id}>
                     <tr
                       key={attempt._id}
                       className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]"
                     >
-                      <td className="px-5 py-3.5 font-medium text-[#0B2027]">{attempt.studentName}</td>
-                      <td className="px-5 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-3 sm:px-5 py-3.5 font-medium text-[#0B2027]">{attempt.studentName}</td>
+                      <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
+                      <td className="px-3 sm:px-5 py-3.5">
                         <AttemptStatusBadge status={attempt.status} />
                       </td>
-                      <td className="px-5 py-3.5 text-[#0B2027]">
+                      <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">
                         {attempt.status === "submitted" ? (
                           <span className="font-semibold">
                             {attempt.totalScore} / {attempt.maxScore}
@@ -158,10 +167,10 @@ export default function QuizSubmissionsPage() {
                           <span className="text-[#94A3B8]">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-[#64748B]">
+                      <td className="px-3 sm:px-5 py-3.5 text-[#64748B]">
                         {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—"}
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-3 sm:px-5 py-3.5 text-right">
                         <button
                           onClick={() => toggleExpand(attempt._id)}
                           className="text-[#0B6E4F] text-sm font-medium hover:underline"
@@ -173,7 +182,7 @@ export default function QuizSubmissionsPage() {
 
                     {expandedId === attempt._id && (
                       <tr>
-                        <td colSpan={6} className="bg-[#F8FAFC] px-5 py-5">
+                        <td colSpan={6} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
                           <AttemptBreakdown attempt={attempt} quiz={quiz} />
                         </td>
                       </tr>
@@ -182,6 +191,7 @@ export default function QuizSubmissionsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </main>
@@ -223,13 +233,12 @@ function AttemptBreakdown({ attempt, quiz }) {
                     </span>
                   )}
                   <span
-                    className={`inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 ${
-                      result.awardedMarks === result.maxMarks
+                    className={`inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 ${result.awardedMarks === result.maxMarks
                         ? "bg-[#EAF6F1] text-[#0B6E4F]"
                         : result.awardedMarks === 0
-                        ? "bg-red-50 text-red-600"
-                        : "bg-[#FFF1EC] text-[#FF5A36]"
-                    }`}
+                          ? "bg-red-50 text-red-600"
+                          : "bg-[#FFF1EC] text-[#FF5A36]"
+                      }`}
                   >
                     {result.awardedMarks} / {result.maxMarks}
                   </span>
@@ -241,9 +250,8 @@ function AttemptBreakdown({ attempt, quiz }) {
                   Student answered:{" "}
                   <span className="font-medium text-[#0B2027]">
                     {answer?.selectedOption != null
-                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${
-                          question?.options?.[answer.selectedOption] ?? ""
-                        }`
+                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${question?.options?.[answer.selectedOption] ?? ""
+                      }`
                       : "Not answered"}
                   </span>
                 </p>
@@ -272,9 +280,8 @@ function AttemptStatusBadge({ status }) {
   };
   return (
     <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-        styles[status] || styles["in-progress"]
-      }`}
+      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${styles[status] || styles["in-progress"]
+        }`}
     >
       {status === "in-progress" ? "In progress" : "Submitted"}
     </span>
