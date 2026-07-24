@@ -15,6 +15,7 @@ export default function QuizSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   useEffect(() => {
     fetchData();
@@ -53,6 +54,31 @@ export default function QuizSubmissionsPage() {
   const toggleExpand = (id) => {
     setExpandedId((prev) => (prev === id ? null : id));
   };
+
+  const toggleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key !== key) return { key, direction: "asc" };
+      return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
+    });
+  };
+
+  const sortedAttempts = [...attempts].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const dir = sortConfig.direction === "asc" ? 1 : -1;
+
+    if (sortConfig.key === "regNumber") {
+      return a.regNumber.localeCompare(b.regNumber, undefined, { numeric: true }) * dir;
+    }
+
+    if (sortConfig.key === "score") {
+      // Ungraded (in-progress) attempts have no score yet — keep them at the bottom
+      const aScore = a.status === "submitted" ? a.totalScore : -Infinity;
+      const bScore = b.status === "submitted" ? b.totalScore : -Infinity;
+      return (aScore - bScore) * dir;
+    }
+
+    return 0;
+  });
 
   if (loading) {
     return (
@@ -135,67 +161,118 @@ export default function QuizSubmissionsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-            <table className="min-w-[760px] w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#E2E8F0] text-left text-[#64748B]">
-                  <th className="px-3 sm:px-5 py-3 font-medium">Name</th>
-                  <th className="px-3 sm:px-5 py-3 font-medium">Reg. number</th>
-                  <th className="px-3 sm:px-5 py-3 font-medium">Status</th>
-                  <th className="px-3 sm:px-5 py-3 font-medium">Score</th>
-                  <th className="px-3 sm:px-5 py-3 font-medium">Submitted</th>
-                  <th className="px-3 sm:px-5 py-3 font-medium text-right">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attempts.map((attempt) => (
-                  <Fragment key={attempt._id}>
-                    <tr
-                      key={attempt._id}
-                      className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]"
-                    >
-                      <td className="px-3 sm:px-5 py-3.5 font-medium text-[#0B2027]">{attempt.studentName}</td>
-                      <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
-                      <td className="px-3 sm:px-5 py-3.5">
-                        <AttemptStatusBadge status={attempt.status} />
-                      </td>
-                      <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">
-                        {attempt.status === "submitted" ? (
-                          <span className="font-semibold">
-                            {attempt.totalScore} / {attempt.maxScore}
-                          </span>
-                        ) : (
-                          <span className="text-[#94A3B8]">—</span>
-                        )}
-                      </td>
-                      <td className="px-3 sm:px-5 py-3.5 text-[#64748B]">
-                        {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—"}
-                      </td>
-                      <td className="px-3 sm:px-5 py-3.5 text-right">
-                        <button
-                          onClick={() => toggleExpand(attempt._id)}
-                          className="text-[#0B6E4F] text-sm font-medium hover:underline"
-                        >
-                          {expandedId === attempt._id ? "Hide" : "View"}
-                        </button>
-                      </td>
-                    </tr>
-
-                    {expandedId === attempt._id && (
-                      <tr>
-                        <td colSpan={6} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
-                          <AttemptBreakdown attempt={attempt} quiz={quiz} />
+              <table className="min-w-[760px] w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E2E8F0] text-left text-[#64748B]">
+                    <th className="px-3 sm:px-5 py-3 font-medium">Name</th>
+                    <th className="px-3 sm:px-5 py-3 font-medium">
+                      <SortableHeaderButton
+                        label="Reg. number"
+                        sortKey="regNumber"
+                        sortConfig={sortConfig}
+                        onClick={toggleSort}
+                      />
+                    </th>
+                    <th className="px-3 sm:px-5 py-3 font-medium">Status</th>
+                    <th className="px-3 sm:px-5 py-3 font-medium">
+                      <SortableHeaderButton
+                        label="Score"
+                        sortKey="score"
+                        sortConfig={sortConfig}
+                        onClick={toggleSort}
+                      />
+                    </th>
+                    <th className="px-3 sm:px-5 py-3 font-medium">Submitted</th>
+                    <th className="px-3 sm:px-5 py-3 font-medium text-right">Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedAttempts.map((attempt) => (
+                    <Fragment key={attempt._id}>
+                      <tr className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]">
+                        <td className="px-3 sm:px-5 py-3.5 font-medium text-[#0B2027]">
+                          {attempt.studentName}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
+                        <td className="px-3 sm:px-5 py-3.5">
+                          <AttemptStatusBadge status={attempt.status} />
+                        </td>
+                        <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">
+                          {attempt.status === "submitted" ? (
+                            <span className="font-semibold">
+                              {attempt.totalScore} / {attempt.maxScore}
+                            </span>
+                          ) : (
+                            <span className="text-[#94A3B8]">—</span>
+                          )}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3.5 text-[#64748B]">
+                          {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—"}
+                        </td>
+                        <td className="px-3 sm:px-5 py-3.5 text-right">
+                          <button
+                            onClick={() => toggleExpand(attempt._id)}
+                            className="text-[#0B6E4F] text-sm font-medium hover:underline"
+                          >
+                            {expandedId === attempt._id ? "Hide" : "View"}
+                          </button>
                         </td>
                       </tr>
-                    )}
-                  </Fragment>
-                ))}
-              </tbody>
-            </table>
+
+                      {expandedId === attempt._id && (
+                        <tr>
+                          <td colSpan={6} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
+                            <AttemptBreakdown attempt={attempt} quiz={quiz} />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
       </main>
     </div>
+  );
+}
+
+function SortableHeaderButton({ label, sortKey, sortConfig, onClick }) {
+  const isActive = sortConfig.key === sortKey;
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(sortKey)}
+      className={`inline-flex items-center gap-1 font-medium transition ${
+        isActive ? "text-[#0B2027]" : "text-[#64748B] hover:text-[#0B2027]"
+      }`}
+    >
+      {label}
+      <SortIcon active={isActive} direction={sortConfig.direction} />
+    </button>
+  );
+}
+
+function SortIcon({ active, direction }) {
+  // Neutral (unsorted) state — two small stacked chevrons
+  if (!active) {
+    return (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#CBD5E1]">
+        <path d="M7 9l5-5 5 5" />
+        <path d="M7 15l5 5 5-5" />
+      </svg>
+    );
+  }
+  // Active — single chevron pointing the current sort direction
+  return direction === "asc" ? (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 15l6-6 6 6" />
+    </svg>
+  ) : (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 9l6 6 6-6" />
+    </svg>
   );
 }
 
@@ -233,12 +310,13 @@ function AttemptBreakdown({ attempt, quiz }) {
                     </span>
                   )}
                   <span
-                    className={`inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 ${result.awardedMarks === result.maxMarks
+                    className={`inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 ${
+                      result.awardedMarks === result.maxMarks
                         ? "bg-[#EAF6F1] text-[#0B6E4F]"
                         : result.awardedMarks === 0
-                          ? "bg-red-50 text-red-600"
-                          : "bg-[#FFF1EC] text-[#FF5A36]"
-                      }`}
+                        ? "bg-red-50 text-red-600"
+                        : "bg-[#FFF1EC] text-[#FF5A36]"
+                    }`}
                   >
                     {result.awardedMarks} / {result.maxMarks}
                   </span>
@@ -250,8 +328,9 @@ function AttemptBreakdown({ attempt, quiz }) {
                   Student answered:{" "}
                   <span className="font-medium text-[#0B2027]">
                     {answer?.selectedOption != null
-                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${question?.options?.[answer.selectedOption] ?? ""
-                      }`
+                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${
+                          question?.options?.[answer.selectedOption] ?? ""
+                        }`
                       : "Not answered"}
                   </span>
                 </p>
@@ -280,8 +359,9 @@ function AttemptStatusBadge({ status }) {
   };
   return (
     <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${styles[status] || styles["in-progress"]
-        }`}
+      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
+        styles[status] || styles["in-progress"]
+      }`}
     >
       {status === "in-progress" ? "In progress" : "Submitted"}
     </span>
