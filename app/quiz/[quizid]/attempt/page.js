@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const AUTOSAVE_DEBOUNCE_MS = 2000; // save shortly after the student stops interacting
@@ -12,6 +12,7 @@ const storageKey = (quizId) => `rapidquiz_attempt_${quizId}`;
 export default function QuizAttemptPage() {
   const params = useParams();
   const quizId = params.quizId;
+  const router = useRouter();
 
   // "checking" = looking for a saved attemptId before deciding which screen to show
   const [step, setStep] = useState("checking"); // "checking" | "info" | "quiz" | "submitted"
@@ -32,6 +33,9 @@ export default function QuizAttemptPage() {
   const [saveStatus, setSaveStatus] = useState(""); // "saving" | "saved" | "error" | ""
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [results, setResults] = useState([]);
+  const [totalScore, setTotalScore] = useState(0);
+  const [maxScore, setMaxScore] = useState(0);
 
   const debounceTimer = useRef(null);
   const intervalTimer = useRef(null);
@@ -147,6 +151,12 @@ export default function QuizAttemptPage() {
       setQuiz(data.quiz);
       setAnswers(payloadToAnswers(data.answers));
 
+      if (data.status === "submitted") {
+        setResults(data.results || []);
+        setTotalScore(data.totalScore);
+        setMaxScore(data.maxScore);
+      }
+
       setStep(data.status === "submitted" ? "submitted" : "quiz");
     } catch (err) {
       setLoadError("Could not reach the server. Check your connection.");
@@ -247,8 +257,8 @@ export default function QuizAttemptPage() {
         setSubmitting(false);
         return;
       }
-
-      setStep("submitted");
+      
+      router.replace(`/quiz/${quizId}/result/${attemptId}`);
     } catch (err) {
       setSubmitError("Could not reach the server. Check your connection and try again.");
     } finally {
@@ -266,14 +276,90 @@ export default function QuizAttemptPage() {
   }
 
   // --- Already submitted ---
-  if (step === "submitted") {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#EEF2F6] gap-2 text-center px-6">
-        <p className="text-lg font-[600] text-[#0B2027]">You've already submitted this quiz</p>
-        <p className="text-sm text-[#64748B]">No further changes can be made to your answers.</p>
-      </div>
-    );
-  }
+if (step === "submitted") {
+  return (
+    <div className="min-h-screen bg-[#EEF2F6]">
+      <header className="bg-white border-b border-[#E2E8F0]">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+          <span
+            className="font-[600] tracking-tight text-lg text-[#0B2027]"
+            style={{ fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}
+          >
+            RapidQuiz
+          </span>
+
+          <span className="font-semibold text-[#0B2027]">
+            Score: {totalScore} / {maxScore}
+          </span>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="space-y-4">
+          {results
+            .slice()
+            .sort((a, b) => a.questionIndex - b.questionIndex)
+            .map((result) => {
+              const question = quiz?.questions?.[result.questionIndex];
+              const answer = answers[result.questionIndex] || {};
+
+              return (
+                <div
+                  key={result.questionIndex}
+                  className="bg-white rounded-xl border border-[#E2E8F0] p-5"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <p className="font-semibold text-[#0B2027]">
+                      Q{result.questionIndex + 1}. {question?.text}
+                    </p>
+
+                    <span className="font-semibold text-[#0B6E4F]">
+                      {result.awardedMarks} / {result.maxMarks}
+                    </span>
+                  </div>
+
+                  {result.type === "mcq" ? (
+                    <>
+                      <p className="text-sm">
+                        Your Answer:{" "}
+                        <strong>
+                          {answer.selectedOption != null
+                            ? `${String.fromCharCode(
+                                65 + answer.selectedOption
+                              )}. ${question?.options?.[answer.selectedOption]}`
+                            : "Not Answered"}
+                        </strong>
+                      </p>
+
+                      <p className="text-sm mt-2 text-[#64748B]">
+                        {result.feedback}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm mb-2">
+                        <strong>Your Answer:</strong>
+                      </p>
+
+                      <div className="rounded bg-[#F8FAFC] border p-3 text-sm whitespace-pre-wrap">
+                        {answer.longAnswer || "Not Answered"}
+                      </div>
+
+                      {result.feedback && (
+                        <p className="mt-3 text-sm text-[#64748B]">
+                          <strong>AI Feedback:</strong> {result.feedback}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+        </div>
+      </main>
+    </div>
+  );
+}
 
   // --- Step 1: student info ---
   if (step === "info") {
@@ -308,11 +394,10 @@ export default function QuizAttemptPage() {
                   setInfoErrors({ ...infoErrors, studentName: "" });
                 }}
                 placeholder="e.g. Ali Ahmad"
-                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${
-                  infoErrors.studentName
-                    ? "border-red-400 focus:ring-red-200"
-                    : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-                }`}
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.studentName
+                  ? "border-red-400 focus:ring-red-200"
+                  : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+                  }`}
               />
               {infoErrors.studentName && (
                 <p className="mt-1.5 text-xs text-red-500">{infoErrors.studentName}</p>
@@ -331,11 +416,10 @@ export default function QuizAttemptPage() {
                   setInfoErrors({ ...infoErrors, regNumber: "" });
                 }}
                 placeholder="e.g. 2023-ag-9289"
-                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${
-                  infoErrors.regNumber
-                    ? "border-red-400 focus:ring-red-200"
-                    : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-                }`}
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.regNumber
+                  ? "border-red-400 focus:ring-red-200"
+                  : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+                  }`}
               />
               {infoErrors.regNumber && (
                 <p className="mt-1.5 text-xs text-red-500">{infoErrors.regNumber}</p>
@@ -466,11 +550,10 @@ export default function QuizAttemptPage() {
                               type="button"
                               disabled={answer.locked}
                               onClick={() => selectOption(q.originalIndex, i)}
-                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition ${
-                                selected
-                                  ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F] font-medium"
-                                  : "border-[#E2E8F0] text-[#0B2027] hover:border-[#0B6E4F]/50"
-                              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition ${selected
+                                ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F] font-medium"
+                                : "border-[#E2E8F0] text-[#0B2027] hover:border-[#0B6E4F]/50"
+                                } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                             >
                               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px]">
                                 {String.fromCharCode(65 + i)}
