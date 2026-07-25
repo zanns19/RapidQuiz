@@ -182,6 +182,7 @@ export default function QuizSubmissionsPage() {
                         onClick={toggleSort}
                       />
                     </th>
+                    <th className="px-3 sm:px-5 py-3 font-medium">Tab switches</th>
                     <th className="px-3 sm:px-5 py-3 font-medium">Submitted</th>
                     <th className="px-3 sm:px-5 py-3 font-medium text-right">Details</th>
                   </tr>
@@ -206,6 +207,15 @@ export default function QuizSubmissionsPage() {
                             <span className="text-[#94A3B8]">—</span>
                           )}
                         </td>
+                        <td className="px-3 sm:px-5 py-3.5">
+                          {attempt.tabSwitchCount > 0 ? (
+                            <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1">
+                              {attempt.tabSwitchCount}
+                            </span>
+                          ) : (
+                            <span className="text-[#94A3B8]">0</span>
+                          )}
+                        </td>
                         <td className="px-3 sm:px-5 py-3.5 text-[#64748B]">
                           {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—"}
                         </td>
@@ -221,7 +231,7 @@ export default function QuizSubmissionsPage() {
 
                       {expandedId === attempt._id && (
                         <tr>
-                          <td colSpan={6} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
+                          <td colSpan={7} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
                             <AttemptBreakdown attempt={attempt} quiz={quiz} />
                           </td>
                         </tr>

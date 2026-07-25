@@ -37,6 +37,9 @@ export default function QuizAttemptPage() {
   const [totalScore, setTotalScore] = useState(0);
   const [maxScore, setMaxScore] = useState(0);
 
+  // Counts how many times the student switched away from this tab
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+
   const debounceTimer = useRef(null);
   const intervalTimer = useRef(null);
   const latestAnswers = useRef(answers);
@@ -71,6 +74,33 @@ export default function QuizAttemptPage() {
       clearTimeout(debounceTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  // Tab-switch tracking: only while the student is actively taking the quiz.
+  // Every time the tab is hidden (switched away, minimized, app-switched),
+  // bump the local count and report it to the backend so the teacher can
+  // see it alongside the score.
+  useEffect(() => {
+    if (step !== "quiz") return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount((c) => c + 1);
+
+        const id = latestAttemptId.current;
+        if (!id) return;
+        fetch(`${API_URL}/api/attempt/${id}/tab-switch`, {
+          method: "PATCH",
+          credentials: "include",
+        }).catch(() => {
+          // Non-critical — if this one call fails, the count is still
+          // accurate locally and will be reflected once autosave/submit runs.
+        });
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [step]);
 
   const answersToPayload = (answersObj, questions) =>
@@ -150,6 +180,7 @@ export default function QuizAttemptPage() {
       setRegNumber(data.regNumber);
       setQuiz(data.quiz);
       setAnswers(payloadToAnswers(data.answers));
+      setTabSwitchCount(data.tabSwitchCount || 0);
 
       if (data.status === "submitted") {
         setResults(data.results || []);
@@ -197,6 +228,7 @@ export default function QuizAttemptPage() {
       setRegNumber(data.regNumber);
       setQuiz(data.quiz);
       setAnswers(payloadToAnswers(data.answers));
+      setTabSwitchCount(data.tabSwitchCount || 0);
       setStep(data.status === "submitted" ? "submitted" : "quiz");
     } catch (err) {
       setInfoServerError("Could not reach the server. Check your connection and try again.");
@@ -257,7 +289,7 @@ export default function QuizAttemptPage() {
         setSubmitting(false);
         return;
       }
-      
+
       router.replace(`/quiz/${quizId}/result/${attemptId}`);
     } catch (err) {
       setSubmitError("Could not reach the server. Check your connection and try again.");
@@ -276,90 +308,96 @@ export default function QuizAttemptPage() {
   }
 
   // --- Already submitted ---
-if (step === "submitted") {
-  return (
-    <div className="min-h-screen bg-[#EEF2F6]">
-      <header className="bg-white border-b border-[#E2E8F0]">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <span
-            className="font-[600] tracking-tight text-lg text-[#0B2027]"
-            style={{ fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}
-          >
-            RapidQuiz
-          </span>
+  if (step === "submitted") {
+    return (
+      <div className="min-h-screen bg-[#EEF2F6]">
+        <header className="bg-white border-b border-[#E2E8F0]">
+          <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
+            <span
+              className="font-[600] tracking-tight text-lg text-[#0B2027]"
+              style={{ fontFamily: "var(--font-display, 'Space Grotesk', sans-serif)" }}
+            >
+              RapidQuiz
+            </span>
 
-          <span className="font-semibold text-[#0B2027]">
-            Score: {totalScore} / {maxScore}
-          </span>
-        </div>
-      </header>
+            <span className="font-semibold text-[#0B2027]">
+              Score: {totalScore} / {maxScore}
+            </span>
+          </div>
+        </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-4">
-          {results
-            .slice()
-            .sort((a, b) => a.questionIndex - b.questionIndex)
-            .map((result) => {
-              const question = quiz?.questions?.[result.questionIndex];
-              const answer = answers[result.questionIndex] || {};
+        <main className="max-w-4xl mx-auto px-6 py-8">
+          {tabSwitchCount > 0 && (
+            <div className="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-sm text-amber-700">
+              You switched away from this tab {tabSwitchCount} time
+              {tabSwitchCount === 1 ? "" : "s"} during the quiz. This has been noted for your
+              teacher.
+            </div>
+          )}
 
-              return (
-                <div
-                  key={result.questionIndex}
-                  className="bg-white rounded-xl border border-[#E2E8F0] p-5"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <p className="font-semibold text-[#0B2027]">
-                      Q{result.questionIndex + 1}. {question?.text}
-                    </p>
+          <div className="space-y-4">
+            {results
+              .slice()
+              .sort((a, b) => a.questionIndex - b.questionIndex)
+              .map((result) => {
+                const question = quiz?.questions?.[result.questionIndex];
+                const answer = answers[result.questionIndex] || {};
 
-                    <span className="font-semibold text-[#0B6E4F]">
-                      {result.awardedMarks} / {result.maxMarks}
-                    </span>
-                  </div>
-
-                  {result.type === "mcq" ? (
-                    <>
-                      <p className="text-sm">
-                        Your Answer:{" "}
-                        <strong>
-                          {answer.selectedOption != null
-                            ? `${String.fromCharCode(
-                                65 + answer.selectedOption
-                              )}. ${question?.options?.[answer.selectedOption]}`
-                            : "Not Answered"}
-                        </strong>
+                return (
+                  <div
+                    key={result.questionIndex}
+                    className="bg-white rounded-xl border border-[#E2E8F0] p-5"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <p className="font-semibold text-[#0B2027]">
+                        Q{result.questionIndex + 1}. {question?.text}
                       </p>
 
-                      <p className="text-sm mt-2 text-[#64748B]">
-                        {result.feedback}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm mb-2">
-                        <strong>Your Answer:</strong>
-                      </p>
+                      <span className="font-semibold text-[#0B6E4F]">
+                        {result.awardedMarks} / {result.maxMarks}
+                      </span>
+                    </div>
 
-                      <div className="rounded bg-[#F8FAFC] border p-3 text-sm whitespace-pre-wrap">
-                        {answer.longAnswer || "Not Answered"}
-                      </div>
-
-                      {result.feedback && (
-                        <p className="mt-3 text-sm text-[#64748B]">
-                          <strong>AI Feedback:</strong> {result.feedback}
+                    {result.type === "mcq" ? (
+                      <>
+                        <p className="text-sm">
+                          Your Answer:{" "}
+                          <strong>
+                            {answer.selectedOption != null
+                              ? `${String.fromCharCode(
+                                  65 + answer.selectedOption
+                                )}. ${question?.options?.[answer.selectedOption]}`
+                              : "Not Answered"}
+                          </strong>
                         </p>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })}
-        </div>
-      </main>
-    </div>
-  );
-}
+
+                        <p className="text-sm mt-2 text-[#64748B]">{result.feedback}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm mb-2">
+                          <strong>Your Answer:</strong>
+                        </p>
+
+                        <div className="rounded bg-[#F8FAFC] border p-3 text-sm whitespace-pre-wrap">
+                          {answer.longAnswer || "Not Answered"}
+                        </div>
+
+                        {result.feedback && (
+                          <p className="mt-3 text-sm text-[#64748B]">
+                            <strong>AI Feedback:</strong> {result.feedback}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   // --- Step 1: student info ---
   if (step === "info") {
@@ -394,10 +432,11 @@ if (step === "submitted") {
                   setInfoErrors({ ...infoErrors, studentName: "" });
                 }}
                 placeholder="e.g. Ali Ahmad"
-                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.studentName
-                  ? "border-red-400 focus:ring-red-200"
-                  : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-                  }`}
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${
+                  infoErrors.studentName
+                    ? "border-red-400 focus:ring-red-200"
+                    : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+                }`}
               />
               {infoErrors.studentName && (
                 <p className="mt-1.5 text-xs text-red-500">{infoErrors.studentName}</p>
@@ -416,10 +455,11 @@ if (step === "submitted") {
                   setInfoErrors({ ...infoErrors, regNumber: "" });
                 }}
                 placeholder="e.g. 2023-ag-9289"
-                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${infoErrors.regNumber
-                  ? "border-red-400 focus:ring-red-200"
-                  : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-                  }`}
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] placeholder:text-[#94A3B8] outline-none transition focus:ring-2 focus:ring-offset-0 ${
+                  infoErrors.regNumber
+                    ? "border-red-400 focus:ring-red-200"
+                    : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
+                }`}
               />
               {infoErrors.regNumber && (
                 <p className="mt-1.5 text-xs text-red-500">{infoErrors.regNumber}</p>
@@ -478,6 +518,7 @@ if (step === "submitted") {
           </span>
           <div className="flex items-center gap-3 text-sm text-[#64748B]">
             <SaveStatusBadge status={saveStatus} />
+            {tabSwitchCount > 0 && <TabSwitchBadge count={tabSwitchCount} />}
             <span>
               {studentName} <span className="text-[#CBD5E1]">•</span> {regNumber}
             </span>
@@ -550,10 +591,11 @@ if (step === "submitted") {
                               type="button"
                               disabled={answer.locked}
                               onClick={() => selectOption(q.originalIndex, i)}
-                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition ${selected
-                                ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F] font-medium"
-                                : "border-[#E2E8F0] text-[#0B2027] hover:border-[#0B6E4F]/50"
-                                } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-left transition ${
+                                selected
+                                  ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F] font-medium"
+                                  : "border-[#E2E8F0] text-[#0B2027] hover:border-[#0B6E4F]/50"
+                              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                             >
                               <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current text-[10px]">
                                 {String.fromCharCode(65 + i)}
@@ -613,6 +655,28 @@ function SaveStatusBadge({ status }) {
   }[status];
   if (!config) return null;
   return <span className={`text-xs ${config.className}`}>{config.text}</span>;
+}
+
+function TabSwitchBadge({ count }) {
+  return (
+    <span
+      title="Switching tabs during the quiz is recorded and shared with your teacher"
+      className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2 py-0.5"
+    >
+      <WarningIcon />
+      {count} tab switch{count === 1 ? "" : "es"}
+    </span>
+  );
+}
+
+function WarningIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
 }
 
 function LockIcon({ className = "" }) {
