@@ -16,7 +16,10 @@ export default function QuizSubmissionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+  key: "regNumber",
+  direction: "asc",
+});
 
   useEffect(() => {
     fetchData();
