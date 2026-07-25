@@ -1,7 +1,8 @@
 "use client";
-
 import { Fragment, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -61,7 +62,133 @@ export default function QuizSubmissionsPage() {
       return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
     });
   };
+const exportToExcel = async () => {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "RapidQuiz";
+  workbook.created = new Date();
 
+  const sheet = workbook.addWorksheet("Submissions", {
+    views: [{ showGridLines: false }],
+  });
+
+  const columnCount = 7;
+
+  // --- Column widths ---
+  sheet.columns = [
+    { key: "name", width: 24 },
+    { key: "reg", width: 16 },
+    { key: "status", width: 14 },
+    { key: "score", width: 10 },
+    { key: "maxScore", width: 12 },
+    { key: "tabSwitches", width: 14 },
+    { key: "submittedAt", width: 22 },
+  ];
+
+  // --- Title row: course title ---
+  sheet.mergeCells(1, 1, 1, columnCount);
+  const titleCell = sheet.getCell(1, 1);
+  titleCell.value = quiz?.courseTitle || "Quiz Submissions";
+  titleCell.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FF0B2027" } };
+  titleCell.alignment = { vertical: "middle", horizontal: "center" };
+  sheet.getRow(1).height = 32;
+
+  // --- Subtitle row: course code • department • semester ---
+  sheet.mergeCells(2, 1, 2, columnCount);
+  const subtitleCell = sheet.getCell(2, 1);
+  const subtitleParts = [quiz?.courseCode, quiz?.department, quiz?.semester ? `Semester ${quiz.semester}` : null]
+    .filter(Boolean)
+    .join("   •   ");
+  subtitleCell.value = subtitleParts;
+  subtitleCell.font = { name: "Calibri", size: 11, color: { argb: "FF64748B" } };
+  sheet.getRow(2).height = 20;
+
+  // --- Stats row: attempts / submitted / difficulty ---
+  sheet.mergeCells(3, 1, 3, columnCount);
+  const statsCell = sheet.getCell(3, 1);
+  statsCell.value = `${attempts.length} attempts   •   ${submittedCount} submitted   •   Checking difficulty: ${quiz?.checkingDifficulty || "medium"}`;
+  statsCell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
+  sheet.getRow(3).height = 18;
+
+  // --- Spacer row ---
+  sheet.getRow(4).height = 8;
+
+  // --- Header row ---
+  const headerRowIndex = 5;
+  const headers = ["Name", "Reg. Number", "Status", "Marks", "Total Marks", "Tab Switches", "Submitted At"];
+  const headerRow = sheet.getRow(headerRowIndex);
+  headers.forEach((label, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = label;
+    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0B6E4F" } };
+    cell.alignment = { vertical: "middle", horizontal: i >= 2 ? "center" : "left" };
+    cell.border = { bottom: { style: "thin", color: { argb: "FFE2E8F0" } } };
+  });
+  headerRow.height = 24;
+
+  // --- Data rows ---
+  sortedAttempts.forEach((attempt, idx) => {
+    const rowIndex = headerRowIndex + 1 + idx;
+    const row = sheet.getRow(rowIndex);
+    const isSubmitted = attempt.status === "submitted";
+
+    row.getCell(1).value = attempt.studentName;
+    row.getCell(2).value = attempt.regNumber;
+    row.getCell(3).value = isSubmitted ? "Submitted" : "In progress";
+    row.getCell(4).value = isSubmitted ? attempt.totalScore : "—";
+    row.getCell(5).value = isSubmitted ? attempt.maxScore : "—";
+    row.getCell(6).value = attempt.tabSwitchCount || 0;
+    row.getCell(7).value = attempt.submittedAt
+      ? new Date(attempt.submittedAt).toLocaleString()
+      : "—";
+
+    // Zebra striping
+    if (idx % 2 === 1) {
+      for (let c = 1; c <= columnCount; c++) {
+        row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+      }
+    }
+
+    // Status badge coloring
+    const statusCell = row.getCell(3);
+    statusCell.font = {
+      bold: true,
+      color: { argb: isSubmitted ? "FF0B6E4F" : "FF64748B" },
+    };
+    statusCell.alignment = { horizontal: "center" };
+
+    row.getCell(4).alignment = { horizontal: "center" };
+    row.getCell(5).alignment = { horizontal: "center" };
+    row.getCell(6).alignment = { horizontal: "center" };
+
+    // Highlight tab-switch flags
+    if (attempt.tabSwitchCount > 0) {
+      row.getCell(6).font = { bold: true, color: { argb: "FFD97706" } };
+    }
+  });
+
+  // --- Borders around the whole table ---
+  const lastRow = headerRowIndex + sortedAttempts.length;
+  for (let r = headerRowIndex; r <= lastRow; r++) {
+    for (let c = 1; c <= columnCount; c++) {
+      sheet.getCell(r, c).border = {
+        ...sheet.getCell(r, c).border,
+        top: { style: "thin", color: { argb: "FFE2E8F0" } },
+        left: { style: "thin", color: { argb: "FFE2E8F0" } },
+        right: { style: "thin", color: { argb: "FFE2E8F0" } },
+        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+      };
+    }
+  }
+
+  // --- Generate and download ---
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/octet-stream",
+  });
+  const fileName = `${quiz?.courseCode || "quiz"}-submissions.xlsx`;
+  saveAs(blob, fileName);
+};
   const sortedAttempts = [...attempts].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const dir = sortConfig.direction === "asc" ? 1 : -1;
@@ -139,19 +266,29 @@ export default function QuizSubmissionsPage() {
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-[#64748B]">
-            <span>
-              <span className="font-semibold text-[#0B2027]">{attempts.length}</span> attempts
-            </span>
-            <span>
-              <span className="font-semibold text-[#0B2027]">{submittedCount}</span> submitted
-            </span>
-            <span>
-              Checking difficulty:{" "}
-              <span className="font-semibold text-[#0B2027] capitalize">
-                {quiz?.checkingDifficulty || "medium"}
-              </span>
-            </span>
-          </div>
+  <span>
+    <span className="font-semibold text-[#0B2027]">{attempts.length}</span> attempts
+  </span>
+  <span>
+    <span className="font-semibold text-[#0B2027]">{submittedCount}</span> submitted
+  </span>
+  <span>
+    Checking difficulty:{" "}
+    <span className="font-semibold text-[#0B2027] capitalize">
+      {quiz?.checkingDifficulty || "medium"}
+    </span>
+  </span>
+</div>
+
+{attempts.length > 0 && (
+  <button
+  onClick={() => exportToExcel()}
+  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#095b41] transition"
+>
+  <DownloadIcon />
+  Export to Excel
+</button>
+)}
         </div>
 
         <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
@@ -382,6 +519,15 @@ function BackIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M19 12H5M12 19l-7-7 7-7" />
+    </svg>
+  );
+}
+function DownloadIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="M7 10l5 5 5-5" />
+      <path d="M12 15V3" />
     </svg>
   );
 }
