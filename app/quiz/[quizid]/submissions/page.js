@@ -3,6 +3,7 @@ import { Fragment, useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
+import Swal from "sweetalert2";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -23,6 +24,24 @@ export default function QuizSubmissionsPage() {
 
   useEffect(() => {
     fetchData();
+
+    if (!sessionStorage.getItem("submissionsInstructionsShown")) {
+      sessionStorage.setItem("submissionsInstructionsShown", "true");
+      Swal.fire({
+        icon: "info",
+        title: "A few things you can do here",
+        html: `
+          <ul style="text-align:left; padding-left: 1.1em; margin: 0;">
+            <li>Download all submissions as an Excel file</li>
+            <li>Sort students by registration number or marks</li>
+            <li>Click "View" on any student to manually grade or adjust their marks</li>
+          </ul>
+        `,
+        confirmButtonText: "Got it",
+        confirmButtonColor: "#0B6E4F",
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
 
   const fetchData = async () => {
@@ -349,7 +368,7 @@ export default function QuizSubmissionsPage() {
                     <th className="px-3 sm:px-5 py-3 font-medium">Status</th>
                     <th className="px-3 sm:px-5 py-3 font-medium">
                       <SortableHeaderButton
-                        label="Score"
+                        label="Marks"
                         sortKey="score"
                         sortConfig={sortConfig}
                         onClick={toggleSort}
