@@ -17,9 +17,9 @@ export default function QuizSubmissionsPage() {
   const [error, setError] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [sortConfig, setSortConfig] = useState({
-  key: "regNumber",
-  direction: "asc",
-});
+    key: "regNumber",
+    direction: "asc",
+  });
 
   useEffect(() => {
     fetchData();
@@ -65,133 +65,166 @@ export default function QuizSubmissionsPage() {
       return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
     });
   };
-const exportToExcel = async () => {
-  const workbook = new ExcelJS.Workbook();
-  workbook.creator = "RapidQuiz";
-  workbook.created = new Date();
 
-  const sheet = workbook.addWorksheet("Submissions", {
-    views: [{ showGridLines: false }],
-  });
+  // Optimistically updates local state so the total score and table
+  // refresh instantly, then persists the change to the backend.
+  const handleMarksUpdate = async (attemptId, questionIndex, maxMarks, rawValue) => {
+    let marks = Number(rawValue);
+    if (Number.isNaN(marks)) marks = 0;
+    marks = Math.max(0, Math.min(maxMarks, marks));
 
-  const columnCount = 7;
+    setAttempts((prev) =>
+      prev.map((a) => {
+        if (a._id !== attemptId) return a;
+        const updatedResults = a.results.map((r) =>
+          r.questionIndex === questionIndex ? { ...r, awardedMarks: marks, needsReview: false } : r
+        );
+        const totalScore = updatedResults.reduce((sum, r) => sum + r.awardedMarks, 0);
+        return { ...a, results: updatedResults, totalScore };
+      })
+    );
 
-  // --- Column widths ---
-  sheet.columns = [
-    { key: "name", width: 24 },
-    { key: "reg", width: 16 },
-    { key: "status", width: 14 },
-    { key: "score", width: 10 },
-    { key: "maxScore", width: 12 },
-    { key: "tabSwitches", width: 14 },
-    { key: "submittedAt", width: 22 },
-  ];
+    try {
+      await fetch(`${API_URL}/api/attempt/${attemptId}/marks`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ questionIndex, awardedMarks: marks }),
+      });
+    } catch (err) {
+      // Non-critical — worst case the teacher re-enters the value; the
+      // table already reflects what they typed.
+    }
+  };
 
-  // --- Title row: course title ---
-  sheet.mergeCells(1, 1, 1, columnCount);
-  const titleCell = sheet.getCell(1, 1);
-  titleCell.value = quiz?.courseTitle || "Quiz Submissions";
-  titleCell.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FF0B2027" } };
-  titleCell.alignment = { vertical: "middle", horizontal: "center" };
-  sheet.getRow(1).height = 32;
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "RapidQuiz";
+    workbook.created = new Date();
 
-  // --- Subtitle row: course code • department • semester ---
-  sheet.mergeCells(2, 1, 2, columnCount);
-  const subtitleCell = sheet.getCell(2, 1);
-  const subtitleParts = [quiz?.courseCode, quiz?.department, quiz?.semester ? `Semester ${quiz.semester}` : null]
-    .filter(Boolean)
-    .join("   •   ");
-  subtitleCell.value = subtitleParts;
-  subtitleCell.font = { name: "Calibri", size: 11, color: { argb: "FF64748B" } };
-  sheet.getRow(2).height = 20;
+    const sheet = workbook.addWorksheet("Submissions", {
+      views: [{ showGridLines: false }],
+    });
 
-  // --- Stats row: attempts / submitted / difficulty ---
-  sheet.mergeCells(3, 1, 3, columnCount);
-  const statsCell = sheet.getCell(3, 1);
-  statsCell.value = `${attempts.length} attempts   •   ${submittedCount} submitted   •   Checking difficulty: ${quiz?.checkingDifficulty || "medium"}`;
-  statsCell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
-  sheet.getRow(3).height = 18;
+    const columnCount = 7;
 
-  // --- Spacer row ---
-  sheet.getRow(4).height = 8;
+    // --- Column widths ---
+    sheet.columns = [
+      { key: "name", width: 24 },
+      { key: "reg", width: 16 },
+      { key: "status", width: 14 },
+      { key: "score", width: 10 },
+      { key: "maxScore", width: 12 },
+      { key: "tabSwitches", width: 14 },
+      { key: "submittedAt", width: 22 },
+    ];
 
-  // --- Header row ---
-  const headerRowIndex = 5;
-  const headers = ["Name", "Reg. Number", "Status", "Marks", "Total Marks", "Tab Switches", "Submitted At"];
-  const headerRow = sheet.getRow(headerRowIndex);
-  headers.forEach((label, i) => {
-    const cell = headerRow.getCell(i + 1);
-    cell.value = label;
-    cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0B6E4F" } };
-    cell.alignment = { vertical: "middle", horizontal: i >= 2 ? "center" : "left" };
-    cell.border = { bottom: { style: "thin", color: { argb: "FFE2E8F0" } } };
-  });
-  headerRow.height = 24;
+    // --- Title row: course title ---
+    sheet.mergeCells(1, 1, 1, columnCount);
+    const titleCell = sheet.getCell(1, 1);
+    titleCell.value = quiz?.courseTitle || "Quiz Submissions";
+    titleCell.font = { name: "Calibri", size: 18, bold: true, color: { argb: "FF0B2027" } };
+    titleCell.alignment = { vertical: "middle", horizontal: "center" };
+    sheet.getRow(1).height = 32;
 
-  // --- Data rows ---
-  sortedAttempts.forEach((attempt, idx) => {
-    const rowIndex = headerRowIndex + 1 + idx;
-    const row = sheet.getRow(rowIndex);
-    const isSubmitted = attempt.status === "submitted";
+    // --- Subtitle row: course code • department • semester ---
+    sheet.mergeCells(2, 1, 2, columnCount);
+    const subtitleCell = sheet.getCell(2, 1);
+    const subtitleParts = [quiz?.courseCode, quiz?.department, quiz?.semester ? `Semester ${quiz.semester}` : null]
+      .filter(Boolean)
+      .join("   •   ");
+    subtitleCell.value = subtitleParts;
+    subtitleCell.font = { name: "Calibri", size: 11, color: { argb: "FF64748B" } };
+    sheet.getRow(2).height = 20;
 
-    row.getCell(1).value = attempt.studentName;
-    row.getCell(2).value = attempt.regNumber;
-    row.getCell(3).value = isSubmitted ? "Submitted" : "In progress";
-    row.getCell(4).value = isSubmitted ? attempt.totalScore : "—";
-    row.getCell(5).value = isSubmitted ? attempt.maxScore : "—";
-    row.getCell(6).value = attempt.tabSwitchCount || 0;
-    row.getCell(7).value = attempt.submittedAt
-      ? new Date(attempt.submittedAt).toLocaleString()
-      : "—";
+    // --- Stats row: attempts / submitted / difficulty ---
+    sheet.mergeCells(3, 1, 3, columnCount);
+    const statsCell = sheet.getCell(3, 1);
+    statsCell.value = `${attempts.length} attempts   •   ${submittedCount} submitted   •   Checking difficulty: ${
+      quiz?.checkingDifficulty || "medium"
+    }`;
+    statsCell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
+    sheet.getRow(3).height = 18;
 
-    // Zebra striping
-    if (idx % 2 === 1) {
+    // --- Spacer row ---
+    sheet.getRow(4).height = 8;
+
+    // --- Header row ---
+    const headerRowIndex = 5;
+    const headers = ["Name", "Reg. Number", "Status", "Marks", "Total Marks", "Tab Switches", "Submitted At"];
+    const headerRow = sheet.getRow(headerRowIndex);
+    headers.forEach((label, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = label;
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF0B6E4F" } };
+      cell.alignment = { vertical: "middle", horizontal: i >= 2 ? "center" : "left" };
+      cell.border = { bottom: { style: "thin", color: { argb: "FFE2E8F0" } } };
+    });
+    headerRow.height = 24;
+
+    // --- Data rows ---
+    sortedAttempts.forEach((attempt, idx) => {
+      const rowIndex = headerRowIndex + 1 + idx;
+      const row = sheet.getRow(rowIndex);
+      const isSubmitted = attempt.status === "submitted";
+
+      row.getCell(1).value = attempt.studentName;
+      row.getCell(2).value = attempt.regNumber;
+      row.getCell(3).value = isSubmitted ? "Submitted" : "In progress";
+      row.getCell(4).value = isSubmitted ? attempt.totalScore : "—";
+      row.getCell(5).value = isSubmitted ? attempt.maxScore : "—";
+      row.getCell(6).value = attempt.tabSwitchCount || 0;
+      row.getCell(7).value = attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—";
+
+      // Zebra striping
+      if (idx % 2 === 1) {
+        for (let c = 1; c <= columnCount; c++) {
+          row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+        }
+      }
+
+      // Status badge coloring
+      const statusCell = row.getCell(3);
+      statusCell.font = {
+        bold: true,
+        color: { argb: isSubmitted ? "FF0B6E4F" : "FF64748B" },
+      };
+      statusCell.alignment = { horizontal: "center" };
+
+      row.getCell(4).alignment = { horizontal: "center" };
+      row.getCell(5).alignment = { horizontal: "center" };
+      row.getCell(6).alignment = { horizontal: "center" };
+
+      // Highlight tab-switch flags
+      if (attempt.tabSwitchCount > 0) {
+        row.getCell(6).font = { bold: true, color: { argb: "FFD97706" } };
+      }
+    });
+
+    // --- Borders around the whole table ---
+    const lastRow = headerRowIndex + sortedAttempts.length;
+    for (let r = headerRowIndex; r <= lastRow; r++) {
       for (let c = 1; c <= columnCount; c++) {
-        row.getCell(c).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF8FAFC" } };
+        sheet.getCell(r, c).border = {
+          ...sheet.getCell(r, c).border,
+          top: { style: "thin", color: { argb: "FFE2E8F0" } },
+          left: { style: "thin", color: { argb: "FFE2E8F0" } },
+          right: { style: "thin", color: { argb: "FFE2E8F0" } },
+          bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
+        };
       }
     }
 
-    // Status badge coloring
-    const statusCell = row.getCell(3);
-    statusCell.font = {
-      bold: true,
-      color: { argb: isSubmitted ? "FF0B6E4F" : "FF64748B" },
-    };
-    statusCell.alignment = { horizontal: "center" };
+    // --- Generate and download ---
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/octet-stream",
+    });
+    const fileName = `${quiz?.courseCode || "quiz"}-submissions.xlsx`;
+    saveAs(blob, fileName);
+  };
 
-    row.getCell(4).alignment = { horizontal: "center" };
-    row.getCell(5).alignment = { horizontal: "center" };
-    row.getCell(6).alignment = { horizontal: "center" };
-
-    // Highlight tab-switch flags
-    if (attempt.tabSwitchCount > 0) {
-      row.getCell(6).font = { bold: true, color: { argb: "FFD97706" } };
-    }
-  });
-
-  // --- Borders around the whole table ---
-  const lastRow = headerRowIndex + sortedAttempts.length;
-  for (let r = headerRowIndex; r <= lastRow; r++) {
-    for (let c = 1; c <= columnCount; c++) {
-      sheet.getCell(r, c).border = {
-        ...sheet.getCell(r, c).border,
-        top: { style: "thin", color: { argb: "FFE2E8F0" } },
-        left: { style: "thin", color: { argb: "FFE2E8F0" } },
-        right: { style: "thin", color: { argb: "FFE2E8F0" } },
-        bottom: { style: "thin", color: { argb: "FFE2E8F0" } },
-      };
-    }
-  }
-
-  // --- Generate and download ---
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/octet-stream",
-  });
-  const fileName = `${quiz?.courseCode || "quiz"}-submissions.xlsx`;
-  saveAs(blob, fileName);
-};
   const sortedAttempts = [...attempts].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const dir = sortConfig.direction === "asc" ? 1 : -1;
@@ -269,29 +302,29 @@ const exportToExcel = async () => {
           </p>
 
           <div className="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-sm text-[#64748B]">
-  <span>
-    <span className="font-semibold text-[#0B2027]">{attempts.length}</span> attempts
-  </span>
-  <span>
-    <span className="font-semibold text-[#0B2027]">{submittedCount}</span> submitted
-  </span>
-  <span>
-    Checking difficulty:{" "}
-    <span className="font-semibold text-[#0B2027] capitalize">
-      {quiz?.checkingDifficulty || "medium"}
-    </span>
-  </span>
-</div>
+            <span>
+              <span className="font-semibold text-[#0B2027]">{attempts.length}</span> attempts
+            </span>
+            <span>
+              <span className="font-semibold text-[#0B2027]">{submittedCount}</span> submitted
+            </span>
+            <span>
+              Checking difficulty:{" "}
+              <span className="font-semibold text-[#0B2027] capitalize">
+                {quiz?.checkingDifficulty || "medium"}
+              </span>
+            </span>
+          </div>
 
-{attempts.length > 0 && (
-  <button
-  onClick={() => exportToExcel()}
-  className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#095b41] transition"
->
-  <DownloadIcon />
-  Export to Excel
-</button>
-)}
+          {attempts.length > 0 && (
+            <button
+              onClick={() => exportToExcel()}
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium px-3.5 py-2 rounded-lg bg-[#0B6E4F] text-white hover:bg-[#095b41] transition"
+            >
+              <DownloadIcon />
+              Export to Excel
+            </button>
+          )}
         </div>
 
         <div className="bg-white rounded-xl border border-[#E2E8F0] overflow-hidden">
@@ -372,7 +405,7 @@ const exportToExcel = async () => {
                       {expandedId === attempt._id && (
                         <tr>
                           <td colSpan={7} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
-                            <AttemptBreakdown attempt={attempt} quiz={quiz} />
+                            <AttemptBreakdown attempt={attempt} quiz={quiz} onMarksUpdate={handleMarksUpdate} />
                           </td>
                         </tr>
                       )}
@@ -426,7 +459,7 @@ function SortIcon({ active, direction }) {
   );
 }
 
-function AttemptBreakdown({ attempt, quiz }) {
+function AttemptBreakdown({ attempt, quiz, onMarksUpdate }) {
   if (attempt.status !== "submitted") {
     return (
       <p className="text-sm text-[#64748B]">
@@ -459,17 +492,12 @@ function AttemptBreakdown({ attempt, quiz }) {
                       Needs review
                     </span>
                   )}
-                  <span
-                    className={`inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 ${
-                      result.awardedMarks === result.maxMarks
-                        ? "bg-[#EAF6F1] text-[#0B6E4F]"
-                        : result.awardedMarks === 0
-                        ? "bg-red-50 text-red-600"
-                        : "bg-[#FFF1EC] text-[#FF5A36]"
-                    }`}
-                  >
-                    {result.awardedMarks} / {result.maxMarks}
-                  </span>
+                  <EditableMarks
+                    result={result}
+                    onCommit={(newValue) =>
+                      onMarksUpdate(attempt._id, result.questionIndex, result.maxMarks, newValue)
+                    }
+                  />
                 </div>
               </div>
 
@@ -499,6 +527,43 @@ function AttemptBreakdown({ attempt, quiz }) {
           );
         })}
     </div>
+  );
+}
+
+// A small number input that looks like the score badge until you click it.
+// Commits on blur or Enter, so it doesn't fire a request on every keystroke.
+function EditableMarks({ result, onCommit }) {
+  const [value, setValue] = useState(result.awardedMarks);
+
+  useEffect(() => {
+    setValue(result.awardedMarks);
+  }, [result.awardedMarks]);
+
+  const colorClass =
+    result.awardedMarks === result.maxMarks
+      ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F]"
+      : result.awardedMarks === 0
+      ? "border-red-300 bg-red-50 text-red-600"
+      : "border-[#FF5A36]/40 bg-[#FFF1EC] text-[#FF5A36]";
+
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border text-xs font-medium px-1.5 py-0.5 ${colorClass}`}>
+      <input
+        type="number"
+        min={0}
+        max={result.maxMarks}
+        step="0.5"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={(e) => onCommit(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.target.blur();
+        }}
+        className="w-10 bg-transparent text-right font-semibold outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+        title="Click to edit marks"
+      />
+      / {result.maxMarks}
+    </span>
   );
 }
 
