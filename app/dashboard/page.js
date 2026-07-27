@@ -244,13 +244,23 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setModalOpen(true)}
-            className="w-full sm:w-auto inline-flex items-center cursor-pointer justify-center sm:justify-start gap-2 rounded-lg bg-[#0B2A2A] text-white text-xs sm:text-sm font-medium px-4 py-2.5 transition hover:bg-[#0B6E4F] focus:outline-none focus:ring-2 focus:ring-[#0B6E4F]/40 focus:ring-offset-2"
-          >
-            <PlusIcon />
-            Create quiz
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => setModalOpen(true)}
+              className="w-full sm:w-auto inline-flex items-center cursor-pointer justify-center sm:justify-start gap-2 rounded-lg bg-[#0B2A2A] text-white text-xs sm:text-sm font-medium px-4 py-2.5 transition hover:bg-[#0B6E4F] focus:outline-none focus:ring-2 focus:ring-[#0B6E4F]/40 focus:ring-offset-2"
+            >
+              <PlusIcon />
+              Create quiz
+            </button>
+
+            <button
+              onClick={() => router.push("/dashboard/students")}
+              className="w-full sm:w-auto inline-flex items-center cursor-pointer justify-center sm:justify-start gap-2 rounded-lg bg-white/10 border border-white/30 text-white text-xs sm:text-sm font-medium px-4 py-2.5 transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2"
+            >
+              <AnalyticsIcon />
+              Student Analytics
+            </button>
+          </div>
         </div>
 
         {/* Table */}
@@ -606,6 +616,17 @@ function PlusIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+function AnalyticsIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 3v18h18" />
+      <rect x="7" y="12" width="3" height="6" />
+      <rect x="12.5" y="8" width="3" height="10" />
+      <rect x="18" y="5" width="3" height="13" />
     </svg>
   );
 }
