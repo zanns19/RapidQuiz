@@ -159,9 +159,8 @@ export default function QuizSubmissionsPage() {
     // --- Stats row: attempts / submitted / difficulty ---
     sheet.mergeCells(3, 1, 3, columnCount);
     const statsCell = sheet.getCell(3, 1);
-    statsCell.value = `${attempts.length} attempts   •   ${submittedCount} submitted   •   Checking difficulty: ${
-      quiz?.checkingDifficulty || "medium"
-    }`;
+    statsCell.value = `${attempts.length} attempts   •   ${submittedCount} submitted   •   Checking difficulty: ${quiz?.checkingDifficulty || "medium"
+      }`;
     statsCell.font = { name: "Calibri", size: 10, italic: true, color: { argb: "FF94A3B8" } };
     sheet.getRow(3).height = 18;
 
@@ -353,11 +352,11 @@ export default function QuizSubmissionsPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="min-w-[760px] w-full text-sm">
+              <table className="min-w-[760px] w-full  text-sm">
                 <thead>
                   <tr className="border-b border-[#E2E8F0] text-left text-[#64748B]">
-                    <th className="px-3 sm:px-5 py-3 font-medium">Name</th>
-                    <th className="px-3 sm:px-5 py-3 font-medium">
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">Name</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">
                       <SortableHeaderButton
                         label="Reg. number"
                         sortKey="regNumber"
@@ -365,32 +364,33 @@ export default function QuizSubmissionsPage() {
                         onClick={toggleSort}
                       />
                     </th>
-                    <th className="px-3 sm:px-5 py-3 font-medium">Status</th>
-                    <th className="px-3 sm:px-5 py-3 font-medium">
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">Status</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">
                       <SortableHeaderButton
-                        label="Marks"
+                        label="Score"
                         sortKey="score"
                         sortConfig={sortConfig}
                         onClick={toggleSort}
                       />
                     </th>
-                    <th className="px-3 sm:px-5 py-3 font-medium">Tab switches</th>
-                    <th className="px-3 sm:px-5 py-3 font-medium">Submitted</th>
-                    <th className="px-3 sm:px-5 py-3 font-medium text-right">Details</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">Grading</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">Tab switches</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium">Submitted</th>
+                    <th className="px-1.5 sm:px-3.5 py-3 font-medium text-left">Details</th>
                   </tr>
                 </thead>
                 <tbody>
                   {sortedAttempts.map((attempt) => (
                     <Fragment key={attempt._id}>
                       <tr className="border-b border-[#F1F5F9] last:border-0 hover:bg-[#F8FAFC]">
-                        <td className="px-3 sm:px-5 py-3.5 font-medium text-[#0B2027]">
+                        <td className="px-1.5 sm:px-3.5 py-3.5 font-medium text-[#0B2027]">
                           {attempt.studentName}
                         </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
-                        <td className="px-3 sm:px-5 py-3.5">
+                        <td className="px-1.5 sm:px-3 py-3.5 text-[#0B2027]">{attempt.regNumber}</td>
+                        <td className="px-1.5 sm:px-3.5 py-3.5">
                           <AttemptStatusBadge status={attempt.status} />
                         </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-[#0B2027]">
+                        <td className="px-1.5 sm:px-3.5 py-3.5 text-[#0B2027]">
                           {attempt.status === "submitted" ? (
                             <span className="font-semibold">
                               {attempt.totalScore} / {attempt.maxScore}
@@ -399,7 +399,10 @@ export default function QuizSubmissionsPage() {
                             <span className="text-[#94A3B8]">—</span>
                           )}
                         </td>
-                        <td className="px-3 sm:px-5 py-3.5">
+                        <td className="px-1.5 sm:px-3.5 py-3.5">
+                          <GradingStatusBadge attempt={attempt} />
+                        </td>
+                        <td className="px-1.5 sm:px-3.5 py-3.5 text-center">
                           {attempt.tabSwitchCount > 0 ? (
                             <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1">
                               {attempt.tabSwitchCount}
@@ -408,10 +411,19 @@ export default function QuizSubmissionsPage() {
                             <span className="text-[#94A3B8]">0</span>
                           )}
                         </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-[#64748B]">
-                          {attempt.submittedAt ? new Date(attempt.submittedAt).toLocaleString() : "—"}
+                        <td className="px-1.5 sm:px-3.5 py-3.5 text-[#64748B] whitespace-nowrap">
+                          {attempt.submittedAt ? (
+                            <div className="leading-tight">
+                              <div>{new Date(attempt.submittedAt).toLocaleDateString()}</div>
+                              <div className="text-xs text-[#94A3B8]">
+                                {new Date(attempt.submittedAt).toLocaleTimeString()}
+                              </div>
+                            </div>
+                          ) : (
+                            "—"
+                          )}
                         </td>
-                        <td className="px-3 sm:px-5 py-3.5 text-right">
+                        <td className="px-1.5 sm:px-3.5 py-3.5 text-center">
                           <button
                             onClick={() => toggleExpand(attempt._id)}
                             className="text-[#0B6E4F] text-sm font-medium hover:underline"
@@ -423,7 +435,7 @@ export default function QuizSubmissionsPage() {
 
                       {expandedId === attempt._id && (
                         <tr>
-                          <td colSpan={7} className="bg-[#F8FAFC] px-3 sm:px-5 py-4 sm:py-5">
+                          <td colSpan={8} className="bg-[#F8FAFC] px-1.5 sm:px-3.5 py-4 sm:py-5">
                             <AttemptBreakdown attempt={attempt} quiz={quiz} onMarksUpdate={handleMarksUpdate} />
                           </td>
                         </tr>
@@ -446,9 +458,8 @@ function SortableHeaderButton({ label, sortKey, sortConfig, onClick }) {
     <button
       type="button"
       onClick={() => onClick(sortKey)}
-      className={`inline-flex items-center gap-1 font-medium transition ${
-        isActive ? "text-[#0B2027]" : "text-[#64748B] hover:text-[#0B2027]"
-      }`}
+      className={`inline-flex items-center gap-1 font-medium transition ${isActive ? "text-[#0B2027]" : "text-[#64748B] hover:text-[#0B2027]"
+        }`}
     >
       {label}
       <SortIcon active={isActive} direction={sortConfig.direction} />
@@ -525,9 +536,8 @@ function AttemptBreakdown({ attempt, quiz, onMarksUpdate }) {
                   Student answered:{" "}
                   <span className="font-medium text-[#0B2027]">
                     {answer?.selectedOption != null
-                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${
-                          question?.options?.[answer.selectedOption] ?? ""
-                        }`
+                      ? `${String.fromCharCode(65 + answer.selectedOption)}. ${question?.options?.[answer.selectedOption] ?? ""
+                      }`
                       : "Not answered"}
                   </span>
                 </p>
@@ -562,8 +572,8 @@ function EditableMarks({ result, onCommit }) {
     result.awardedMarks === result.maxMarks
       ? "border-[#0B6E4F] bg-[#EAF6F1] text-[#0B6E4F]"
       : result.awardedMarks === 0
-      ? "border-red-300 bg-red-50 text-red-600"
-      : "border-[#FF5A36]/40 bg-[#FFF1EC] text-[#FF5A36]";
+        ? "border-red-300 bg-red-50 text-red-600"
+        : "border-[#FF5A36]/40 bg-[#FFF1EC] text-[#FF5A36]";
 
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border text-xs font-medium px-1.5 py-0.5 ${colorClass}`}>
@@ -586,6 +596,28 @@ function EditableMarks({ result, onCommit }) {
   );
 }
 
+function GradingStatusBadge({ attempt }) {
+  if (attempt.status !== "submitted") {
+    return <span className="text-[#94A3B8]">—</span>;
+  }
+
+  const needsReviewCount = attempt.results?.filter((r) => r.needsReview).length || 0;
+
+  if (needsReviewCount > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-600 text-xs font-medium px-2.5 py-1">
+        Needs review ({needsReviewCount})
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F1] text-[#0B6E4F] text-xs font-medium px-2.5 py-1">
+      AI graded
+    </span>
+  );
+}
+
 function AttemptStatusBadge({ status }) {
   const styles = {
     "in-progress": "bg-[#F1F5F9] text-[#64748B]",
@@ -593,9 +625,8 @@ function AttemptStatusBadge({ status }) {
   };
   return (
     <span
-      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${
-        styles[status] || styles["in-progress"]
-      }`}
+      className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium capitalize ${styles[status] || styles["in-progress"]
+        }`}
     >
       {status === "in-progress" ? "In progress" : "Submitted"}
     </span>
