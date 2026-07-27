@@ -21,25 +21,28 @@ export default function QuizSubmissionsPage() {
     key: "regNumber",
     direction: "asc",
   });
+  const showInstructions = () => {
+    Swal.fire({
+      icon: "info",
+      title: "A few things you can do here",
+      html: `
+        <ul style="text-align:left; padding-left: 1.1em; margin: 0;">
+          <li>Download all submissions as an Excel file</li>
+          <li>Sort students by registration number or marks</li>
+          <li>Click "View" on any student to manually grade or adjust their marks</li>
+        </ul>
+      `,
+      confirmButtonText: "Got it",
+      confirmButtonColor: "#0B6E4F",
+    });
+  };
 
   useEffect(() => {
     fetchData();
 
     if (!sessionStorage.getItem("submissionsInstructionsShown")) {
       sessionStorage.setItem("submissionsInstructionsShown", "true");
-      Swal.fire({
-        icon: "info",
-        title: "A few things you can do here",
-        html: `
-          <ul style="text-align:left; padding-left: 1.1em; margin: 0;">
-            <li>Download all submissions as an Excel file</li>
-            <li>Sort students by registration number or marks</li>
-            <li>Click "View" on any student to manually grade or adjust their marks</li>
-          </ul>
-        `,
-        confirmButtonText: "Got it",
-        confirmButtonColor: "#0B6E4F",
-      });
+      showInstructions();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
@@ -463,6 +466,15 @@ export default function QuizSubmissionsPage() {
           )}
         </div>
       </main>
+      
+      <button
+        onClick={showInstructions}
+        title="Show instructions"
+        aria-label="Show instructions"
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-[#0B2A2A] text-white shadow-lg hover:bg-[#0B6E4F] transition flex items-center justify-center z-40"
+      >
+        <HelpIcon />
+      </button>
     </div>
   );
 }
@@ -656,7 +668,15 @@ function WarningIcon() {
     </svg>
   );
 }
-
+function HelpIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
 function BackIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

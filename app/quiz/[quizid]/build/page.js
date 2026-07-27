@@ -318,12 +318,7 @@ export default function QuizBuilderPage() {
           >
             Build your quiz
           </h1>
-          <button
-            onClick={showGuide}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            ? Instructions
-          </button>
+          
         </div>
 
         <div className="space-y-5">
@@ -370,6 +365,15 @@ export default function QuizBuilderPage() {
           </button>
         </div>
       </main>
+      
+      <button
+        onClick={showGuide}
+        title="Show Guide"
+        aria-label="Show instructions"
+        className="fixed bottom-6 right-6 h-12 w-12 rounded-full bg-[#0B2A2A] text-white shadow-lg hover:bg-[#0B6E4F] transition flex items-center justify-center z-40"
+      >
+        <HelpIcon />
+      </button>
     </div>
   );
 }
@@ -488,7 +492,15 @@ function QuestionCard({ index, question, onChange, onOptionChange, onRemove, rem
     </div>
   );
 }
-
+function HelpIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
+  );
+}
 function BackIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
