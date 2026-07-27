@@ -284,6 +284,9 @@ export default function QuizSubmissionsPage() {
   }
 
   const submittedCount = attempts.filter((a) => a.status === "submitted").length;
+  const pendingReviewCount = attempts.filter(
+    (a) => a.status === "submitted" && a.results?.some((r) => r.needsReview)
+  ).length;
 
   return (
     <div className="min-h-screen bg-[#EEF2F6]">
@@ -332,6 +335,18 @@ export default function QuizSubmissionsPage() {
                 {quiz?.checkingDifficulty || "medium"}
               </span>
             </span>
+            {pendingReviewCount > 0 && (
+              <span className="inline-flex items-center gap-1 text-amber-600 font-medium">
+                <WarningIcon />
+                {pendingReviewCount} {pendingReviewCount === 1 ? "student needs" : "students need"} manual
+                review
+              </span>
+            )}
+            {pendingReviewCount === 0 && (
+              <span className="inline-flex items-center gap-1 text-green-600 font-medium">
+                All students have been graded.
+              </span>
+            )}
           </div>
 
           {attempts.length > 0 && (
@@ -613,7 +628,7 @@ function GradingStatusBadge({ attempt }) {
 
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF6F1] text-[#0B6E4F] text-xs font-medium px-2.5 py-1">
-      AI graded
+      Graded
     </span>
   );
 }
@@ -630,6 +645,15 @@ function AttemptStatusBadge({ status }) {
     >
       {status === "in-progress" ? "In progress" : "Submitted"}
     </span>
+  );
+}
+function WarningIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </svg>
   );
 }
 
