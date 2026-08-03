@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-
+// This page is for email and changed from outh2 to local email
 // Point this at your Express server, e.g. http://localhost:5000
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
