@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-// Point this at your Express server, e.g. http://localhost:5000
+//Express server, e.g. http://localhost:5000
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function RegisterPage() {
