@@ -32,7 +32,25 @@ export default function DashboardPage() {
 
     return "";
   };
-
+  const fetchQuizzes = async () => {
+    setLoadingQuizzes(true);
+    setTableError("");
+    try {
+      const res = await fetch(`${API_URL}/api/quiz`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTableError(data.message || "Could not load your quizzes.");
+      } else {
+        setQuizzes(data.quizzes || data || []);
+      }
+    } catch (err) {
+      setTableError("Could not reach the server. Check your connection.");
+    } finally {
+      setLoadingQuizzes(false);
+    }
+  };
   useEffect(() => {
     const init = async () => {
       const name = await fetchMe();
@@ -61,25 +79,7 @@ export default function DashboardPage() {
     }
     init();
   }, []);
-  const fetchQuizzes = async () => {
-    setLoadingQuizzes(true);
-    setTableError("");
-    try {
-      const res = await fetch(`${API_URL}/api/quiz`, {
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setTableError(data.message || "Could not load your quizzes.");
-      } else {
-        setQuizzes(data.quizzes || data || []);
-      }
-    } catch (err) {
-      setTableError("Could not reach the server. Check your connection.");
-    } finally {
-      setLoadingQuizzes(false);
-    }
-  };
+
 
   const handleLogout = async () => {
     const con = confirm("Are you sure to logged out")
@@ -530,11 +530,10 @@ function CreateQuizModal({ onClose }) {
                 name="checkingDifficulty"
                 value={form.checkingDifficulty}
                 onChange={handleChange}
-                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] outline-none transition focus:ring-2 focus:ring-offset-0 ${
-                  errors.checkingDifficulty
+                className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-[#0B2027] outline-none transition focus:ring-2 focus:ring-offset-0 ${errors.checkingDifficulty
                     ? "border-red-400 focus:ring-red-200"
                     : "border-[#CBD5E1] focus:border-[#0B6E4F] focus:ring-[#0B6E4F]/20"
-                }`}
+                  }`}
               >
                 <option value="easy">Easy</option>
                 <option value="medium">Medium</option>
