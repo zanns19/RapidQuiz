@@ -192,7 +192,7 @@ Swal.fire({
                                             {q.options?.map((opt, i) => (
                                                 <div key={i} className="option text-xs">
                                                     <span className="mr-2">
-                                                        {String.fromCharCode(65 + i)}.
+                                                        {String.fromCharCode(97 + i)}.
                                                     </span>
                                                     {opt}
                                                 </div>
@@ -204,14 +204,14 @@ Swal.fire({
                     )}
 
                     {/* Long Questions */}
-                    {quiz?.questions?.some((q) => q.type !== "mcq") && (
+                    {quiz?.questions?.some((q) => q.type === "long") && (
                         <>
                             <h3 className="font-semibold text-base mt-4 mb-2">
                                 Solve the following questions:
                             </h3>
 
                             {quiz.questions
-                                .filter((q) => q.type !== "mcq")
+                                .filter((q) => q.type === "long")
                                 .map((q, index) => (
                                     <div key={q._id || index} className="question">
                                         <div className="flex justify-between items-start gap-6">
@@ -309,14 +309,6 @@ Swal.fire({
         }
       }
     `}</style>
-        </div>
-    );
-}
-function MetaItem({ label, value }) {
-    return (
-        <div>
-            <p className="text-xs text-[#94A3B8] mb-0.5">{label}</p>
-            <p className="text-sm font-medium text-[#0B2027] capitalize">{value ?? "—"}</p>
         </div>
     );
 }
