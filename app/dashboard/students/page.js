@@ -23,7 +23,7 @@ export default function StudentAnalyticsPage() {
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
 
-  const [studentGroups, setStudentGroups] = useState([]); // multiple matches
+  const [studentGroups, setStudentGroups] = useState([]); 
   const [selectedKey, setSelectedKey] = useState(null);
 
   const handleSearch = async (e) => {
